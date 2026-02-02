@@ -1,3 +1,46 @@
+import serial
+import time
+
+#ssc32 = serial.Serial('/dev/ttyS0', 115200)
+ssc32 = serial.Serial('COM1', 115200)
+
+home_position = {
+    "base": 1550,
+    "shoulder": 1450,
+    "elbow": 1450,
+    "wrist": 1500,
+    "rotate": 1400,
+    "gripEmpty": 1000,
+    "gripHolding": 1300
+}
+fields = {
+    "base": "#0 P",
+    "shoulder": "#1 P",
+    "elbow": "#2 P",
+    "wrist": "#3 P",
+    "rotate": "#4 P",
+    "grip": "#5 P"
+}
+
+def send(command):
+    ssc32.write( (command+"\r").encode() )
+
+def home(grip_loaded=False, duration_ms=1000):
+    grip_value = home_position["gripHolding"] if grip_loaded else home_position["gripEmpty"]
+    # Send each channel separately with a short pause so movements are staged.
+    sequence = [
+        (fields['base'], home_position['base']),
+        (fields['shoulder'], home_position['shoulder']),
+        (fields['elbow'], home_position['elbow']),
+        (fields['wrist'], home_position['wrist']),
+        (fields['rotate'], home_position['rotate']),
+        (fields['grip'], grip_value),
+    ]
+
+    for field, value in sequence:
+        send(f"{field}{value} T{int(duration_ms)}")
+        time.sleep(1)
+
 def main():
     board = [['-' for _ in range(3)] for _ in range(3)]
 
