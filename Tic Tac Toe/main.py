@@ -13,6 +13,7 @@ home_position = {
     "gripEmpty": 1000,
     "gripHolding": 1300
 }
+
 fields = {
     "base": "#0 P",
     "shoulder": "#1 P",
@@ -27,13 +28,12 @@ def send(command):
 
 def home(grip_loaded=False, duration_ms=1000):
     grip_value = home_position["gripHolding"] if grip_loaded else home_position["gripEmpty"]
-    # Send each channel separately with a short pause so movements are staged.
     sequence = [
-        (fields['base'], home_position['base']),
+        (fields['rotate'], home_position['rotate']),
+        (fields['wrist'], home_position['wrist']),
         (fields['shoulder'], home_position['shoulder']),
         (fields['elbow'], home_position['elbow']),
-        (fields['wrist'], home_position['wrist']),
-        (fields['rotate'], home_position['rotate']),
+        (fields['base'], home_position['base']),
         (fields['grip'], grip_value),
     ]
 
@@ -41,7 +41,35 @@ def home(grip_loaded=False, duration_ms=1000):
         send(f"{field}{value} T{int(duration_ms)}")
         time.sleep(1)
 
+def pickup(blocksLeft):
+    if(blocksLeft == 4):
+        sequence = [
+            # Move to above
+            (fields['base'], ),
+            (fields['elbow'], ),
+            (fields['shoulder'], ),
+            (fields['wrist'], ),
+            (fields['rotate'], ),
+            # Open Grip
+            (fields['grip'], 1000),
+            # Lower to block
+
+            # TODO Lower down arm
+            
+            # Grip the block
+            (fields['grip'], 1400),
+        ]
+    elif(blocksLeft == 3):
+        # TODO Add in other block positions
+        sequence = [
+            (fields['base'], ),
+        ]
+        
+    
+
+
 def main():
+    blocksLeft = 4
     board = [['-' for _ in range(3)] for _ in range(3)]
 
     print("Does the AI play X? 1 - yes 0 - no")
@@ -50,8 +78,11 @@ def main():
     
     turn  = True if ai_symbol == 'x' else False
     
+    home()
+    
     while True:
         winner = detect_win(board)
+        
         if winner or tie(board):
             break
 
@@ -59,6 +90,7 @@ def main():
             x, y = best_move(board, ai_symbol)
             set_position(x, y, ai_symbol, board)
             print_board(board)
+            pickup(blocksLeft)
         else:
             while True:
                 raw = input("Enter your move as row col (0 0): ").strip()
