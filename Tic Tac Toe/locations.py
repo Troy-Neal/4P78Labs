@@ -8,7 +8,42 @@ home_position = {
     "gripHolding": 1300
 }
 
+# Cubes
+# TODO map other cube locations, all point to first for now.
+
 first_cube = {
+    "base": 1150,
+    "shoulder": 1350,
+    "elbow": 1450,
+    "wrist": 1600,
+    "rotate": 1400,
+}
+
+second_cube = {
+    "base": 1150,
+    "shoulder": 1350,
+    "elbow": 1450,
+    "wrist": 1600,
+    "rotate": 1400,
+}
+
+third_cube = {
+    "base": 1150,
+    "shoulder": 1350,
+    "elbow": 1450,
+    "wrist": 1600,
+    "rotate": 1400,
+}
+
+fourth_cube = {
+    "base": 1150,
+    "shoulder": 1350,
+    "elbow": 1450,
+    "wrist": 1600,
+    "rotate": 1400,
+}
+
+fifth_cube = {
     "base": 1150,
     "shoulder": 1350,
     "elbow": 1450,
@@ -95,3 +130,5 @@ bottom_right = {
     "wrist": 1500,
     "rotate": 1400,
 }
+
+board_locations = [[top_left, top_center, top_right],[center_left,center_center,center_right],[bottom_left,bottom_center,bottom_right]]
