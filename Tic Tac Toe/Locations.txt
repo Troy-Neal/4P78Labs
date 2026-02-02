@@ -1,0 +1,7 @@
+Home Position above middle square
+base: 1550 
+shoulder: 1450
+elbow: 1450
+wrist: 1500
+rotation: 1400
+grip: 1000-1300
