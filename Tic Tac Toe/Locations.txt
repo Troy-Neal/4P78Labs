@@ -1,7 +1,80 @@
+Open Grip: 1000
+Closed Grip: 1400
+
+
 Home Position above middle square
 base: 1550 
 shoulder: 1450
 elbow: 1450
 wrist: 1500
 rotation: 1400
-grip: 1000-1300
+
+First Cube Position
+base: 1150
+shoulder: 1350
+elbow: 1600
+wrist: 1400
+rotation: 1400
+
+Middle Board Position
+base: 1550
+shoulder: 1500
+elbow: 1650
+wrist: 1500
+rotation: 1400
+
+Middle Right Position
+base: 1350
+shoulder: 1500
+elbow: 1650
+wrist: 1500
+rotation: 1400
+
+Middle Left Position
+base: 1680
+shoulder: 1500
+elbow: 1650
+wrist: 1500
+rotation: 1400
+
+Top Middle Position
+base: 1500
+shoulder: 1800
+elbow: 1900
+wrist: 1500
+rotation: 1400
+
+Top Right Position
+base: 1250
+shoulder: 1800
+elbow: 1900
+wrist: 1500
+rotation: 1400
+
+Top Left Position
+base: 1750
+shoulder: 1700
+elbow: 1800
+wrist: 1500
+rotation: 1400
+
+Bottom Middle Position
+base: 1550
+shoulder: 1200
+elbow: 1300
+wrist: 1500
+rotation: 1400
+
+Bottom Right Position
+base: 1430
+shoulder: 1200
+elbow: 1300
+wrist: 1500
+rotation: 1400
+
+Bottom Left Position
+base: 1620
+shoulder: 1200
+elbow: 1300
+wrist: 1500
+rotation: 1400
