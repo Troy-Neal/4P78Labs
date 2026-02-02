@@ -14,6 +14,15 @@ home_position = {
     "gripHolding": 1300
 }
 
+current_position = {
+    "base": 1550,
+    "shoulder": 1450,
+    "elbow": 1450,
+    "wrist": 1500,
+    "rotate": 1400,
+    "grip": 1000,
+}
+
 fields = {
     "base": "#0 P",
     "shoulder": "#1 P",
@@ -22,6 +31,26 @@ fields = {
     "rotate": "#4 P",
     "grip": "#5 P"
 }
+
+def update_position(field, newVal):
+    current_position[field] = newVal
+
+def make_command(new_position):
+    sequence = [
+            (fields['base'], new_position['base']),
+            (fields['elbow'], new_position['elbow']),
+            (fields['shoulder'], new_position['shoulder']),
+            (fields['wrist'], new_position['wrist']),
+            (fields['rotate'], new_position['rotate']),
+            (fields['grip'], new_position['grip']),
+    ]
+    
+    for field, value in sequence:
+        if new_position[field] != current_position[field]:
+            send(f"{field}{value} T{int(1000)}")
+        time.sleep(1)
+    current_position = new_position
+
 
 def send(command):
     ssc32.write( (command+"\r").encode() )
@@ -41,7 +70,6 @@ def home(grip_loaded=False, duration_ms=1000):
         send(f"{field}{value} T{int(duration_ms)}")
         time.sleep(1)
 
-def pickup(blocksLeft):
     if(blocksLeft == 4):
         sequence = [
             # Move to above
