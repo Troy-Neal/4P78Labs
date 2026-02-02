@@ -1,9 +1,12 @@
 def main():
     board = [['-' for _ in range(3)] for _ in range(3)]
-    ai_symbol = 'x'
-    human_symbol = 'o'
-    turn  = True if ai_symbol == 'x' else False
 
+    print("Does the AI play X? 1 - yes 0 - no")
+    ai_symbol = 'x' if input() == '1' else 'o'
+    human_symbol = 'o' if ai_symbol == 'x' else 'x'
+    
+    turn  = True if ai_symbol == 'x' else False
+    
     while True:
         winner = detect_win(board)
         if winner or tie(board):
