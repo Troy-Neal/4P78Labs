@@ -2,7 +2,7 @@ import serial
 import time
 import locations
 #ssc32 = serial.Serial('/dev/ttyS0', 115200)
-ssc32 = serial.Serial('COM1', 115200)
+ssc32 = serial.Serial('COM4', 115200)
 do_logging = True
 
 current_position = {
@@ -37,52 +37,63 @@ def log(msg):
 
 
 def open_grip():
-    if current_position['grip'] != 1400:
-        new_position['grip'] = 1400
+    global current_position
+    if current_position['grip'] != 1000:
+        new_position['grip'] = 1000
         make_command(new_position)
-        global current_position; current_position = new_position
+        current_position['grip'] = new_position['grip']
+        #current_position = new_position
         log("Opened claw.")
     else:
         log("Cannot open claw, claw already opened.")
 
 def close_grip():
-    if current_position['grip'] != 1000:
-        new_position['grip'] = 1000
+    global current_position
+    if current_position['grip'] != 1400:
+        new_position['grip'] = 1400
         make_command(new_position)
-        global current_position; current_position = new_position
+        current_position['grip'] = new_position['grip']
+        #current_position = new_position
         log("Closed claw.")
     else:
         log("Cannot close claw, claw already closed.")
 
-def make_command(new_pos, duration_ms=1000):
-    order = ["base", "elbow", "shoulder", "wrist", "rotate", "grip"]
+def make_command(new_pos, duration_ms=600):
+    order = ["base", "shoulder", "wrist", "rotate", "grip"]
     global current_position
 
     for joint in order:
-        desired = new_pos[joint]
-        if desired != current_position[joint]:
-            send(f"{fields[joint]}{desired} T{int(duration_ms)}")
-            time.sleep(1) 
-
-    current_position.update(new_pos)
+        if joint == 'shoulder':
+            current_position['elbow'] = new_pos['elbow']
+        #desired = new_pos[joint]
+        current_position[joint] = new_pos[joint]
+        output = f"{fields['base']}{current_position['base']} {fields['shoulder']}{current_position['shoulder']} {fields['elbow']}{current_position['elbow']} {fields['wrist']}{current_position['wrist']} {fields['rotate']}{current_position['rotate']} {fields['grip']}{current_position['grip']} T{int(duration_ms)}"
+        send(output)
+        #_ = input()
+        time.sleep((duration_ms / 1000.0) * 1.2) 
 
 def send(command):
     ssc32.write( (command+"\r").encode() )
+    ssc32.flush()
 
-def home(grip_loaded=False, duration_ms=1000):
-    grip_value = locations.home_position["gripHolding"] if grip_loaded else locations.home_position["gripEmpty"]
+def home(duration_ms=600):
     sequence = [
-        (fields['rotate'], locations.home_position['rotate']),
-        (fields['wrist'], locations.home_position['wrist']),
-        (fields['shoulder'], locations.home_position['shoulder']),
-        (fields['elbow'], locations.home_position['elbow']),
-        (fields['base'], locations.home_position['base']),
-        (fields['grip'], grip_value),
+        ('rotate', locations.home_position['rotate']),
+        ('wrist', locations.home_position['wrist']),
+        ('shoulder', locations.home_position['shoulder']),
+        ('base', locations.home_position['base']),
     ]
 
     for field, value in sequence:
-        send(f"{field}{value} T{int(duration_ms)}")
-        time.sleep(1)
+        if field == 'shoulder':
+            new_position['elbow'] = locations.home_position['elbow']
+            current_position['elbow'] = locations.home_position['elbow']
+        new_position[field] = value
+        current_position[field] = value
+        output = f"{fields['base']}{current_position['base']} {fields['shoulder']}{current_position['shoulder']} {fields['elbow']}{current_position['elbow']} {fields['wrist']}{current_position['wrist']} {fields['rotate']}{current_position['rotate']} {fields['grip']}{current_position['grip']} T{int(duration_ms)}"
+        send(output)            
+        #_ = input()
+        time.sleep((duration_ms / 1000.0) * 1.2) 
 
 def move_to(location):
     global new_position
@@ -94,7 +105,8 @@ def move_to(location):
     make_command(new_position)
 
 def pickup_next_block(blocksLeft):
-    if(blocksLeft ==5): move_to(locations.first_cube)
+    home()
+    if(blocksLeft == 5): move_to(locations.first_cube)
     elif(blocksLeft == 4): move_to(locations.second_cube)
     elif(blocksLeft == 3): move_to(locations.third_cube)
     elif(blocksLeft == 2): move_to(locations.fourth_cube)
@@ -115,6 +127,7 @@ def main():
     
     turn  = True if ai_symbol == 'x' else False
     
+    open_grip()
     home()
     
     while True:
@@ -134,7 +147,8 @@ def main():
             
             # Move to Location
             move_to(locations.board_locations[x][y])
-            
+	
+            #time.sleep(4) # nap time
             # Drop block
             open_grip()
             

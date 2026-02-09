@@ -5,7 +5,7 @@ home_position = {
     "wrist": 1500,
     "rotate": 1400,
     "gripEmpty": 1000,
-    "gripHolding": 1300
+    "gripHolding": 1400
 }
 
 # Cubes
@@ -13,50 +13,50 @@ home_position = {
 
 first_cube = {
     "base": 1150,
-    "shoulder": 1350,
-    "elbow": 1450,
-    "wrist": 1600,
+    "shoulder": 1450,
+    "elbow": 1750,
+    "wrist": 1500,
     "rotate": 1400,
 }
 
 second_cube = {
     "base": 1150,
-    "shoulder": 1350,
+    "shoulder": 1300,
     "elbow": 1450,
-    "wrist": 1600,
+    "wrist": 1100,
     "rotate": 1400,
 }
 
 third_cube = {
-    "base": 1150,
-    "shoulder": 1350,
+    "base": 1230,
+    "shoulder": 1300,
     "elbow": 1450,
-    "wrist": 1600,
+    "wrist": 1150,
     "rotate": 1400,
 }
 
 fourth_cube = {
     "base": 1150,
-    "shoulder": 1350,
+    "shoulder": 1200,
     "elbow": 1450,
-    "wrist": 1600,
+    "wrist": 1500,
     "rotate": 1400,
 }
 
 fifth_cube = {
     "base": 1150,
-    "shoulder": 1350,
-    "elbow": 1450,
-    "wrist": 1600,
+    "shoulder": 1450,
+    "elbow": 1750,
+    "wrist": 1500,
     "rotate": 1400,
 }
 
 # Top
 
 top_left = {
-    "base": 1750,
+    "base": 1700,
     "shoulder": 1700,
-    "elbow": 1800,
+    "elbow": 1900,
     "wrist": 1500,
     "rotate": 1400,
 }
@@ -84,7 +84,7 @@ center_left = {
     "base": 1680,
     "shoulder": 1500,
     "elbow": 1650,
-    "wrist": 1500,
+    "wrist": 1300,
     "rotate": 1400,
 }
 
@@ -111,23 +111,23 @@ bottom_left = {
     "base": 1620,
     "shoulder": 1200,
     "elbow": 1300,
-    "wrist": 1500,
+    "wrist": 1300,
     "rotate": 1400,
 }
 
 bottom_center = {
-    "base": 1550,
+    "base": 1500,
     "shoulder": 1200,
     "elbow": 1300,
-    "wrist": 1500,
+    "wrist": 1300,
     "rotate": 1400,
 }
 
 bottom_right = {
-    "base": 1430,
+    "base": 1350,
     "shoulder": 1200,
     "elbow": 1300,
-    "wrist": 1500,
+    "wrist": 1300,
     "rotate": 1400,
 }
 

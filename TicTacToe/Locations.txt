@@ -11,9 +11,9 @@ rotation: 1400
 
 First Cube Position
 base: 1150
-shoulder: 1350
-elbow: 1600
-wrist: 1400
+shoulder: 1350 # 1450
+elbow: 1600 # 1750
+wrist: 1400 # 1500
 rotation: 1400
 
 Middle Board Position
