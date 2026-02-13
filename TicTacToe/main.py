@@ -66,6 +66,8 @@ def make_command(new_pos, duration_ms=600):
         if joint == 'shoulder':
             current_position['elbow'] = new_pos['elbow']
         #desired = new_pos[joint]
+        if current_position[joint] == new_pos[joint] and joint != 'shoulder':
+            continue
         current_position[joint] = new_pos[joint]
         output = f"{fields['base']}{current_position['base']} {fields['shoulder']}{current_position['shoulder']} {fields['elbow']}{current_position['elbow']} {fields['wrist']}{current_position['wrist']} {fields['rotate']}{current_position['rotate']} {fields['grip']}{current_position['grip']} T{int(duration_ms)}"
         send(output)

@@ -9,9 +9,9 @@ home_position = {
 }
 
 # Cubes
-# TODO map other cube locations, all point to first for now.
 
-first_cube = {
+
+first_cube = { # t6
     "base": 1150,
     "shoulder": 1450,
     "elbow": 1750,
@@ -19,7 +19,7 @@ first_cube = {
     "rotate": 1400,
 }
 
-second_cube = {
+second_cube = { # t6 f1
     "base": 1150,
     "shoulder": 1300,
     "elbow": 1450,
@@ -27,7 +27,7 @@ second_cube = {
     "rotate": 1400,
 }
 
-third_cube = {
+third_cube = { # t4 f1
     "base": 1230,
     "shoulder": 1300,
     "elbow": 1450,
@@ -35,7 +35,7 @@ third_cube = {
     "rotate": 1400,
 }
 
-fourth_cube = {
+fourth_cube = { # t4
     "base": 1150,
     "shoulder": 1200,
     "elbow": 1450,
@@ -43,7 +43,7 @@ fourth_cube = {
     "rotate": 1400,
 }
 
-fifth_cube = {
+fifth_cube = { # t1
     "base": 1150,
     "shoulder": 1450,
     "elbow": 1750,
@@ -70,8 +70,8 @@ top_center = {
 }
 
 top_right = {
-    "base": 1250,
-    "shoulder": 1800,
+    "base": 1300,
+    "shoulder": 1700,
     "elbow": 1900,
     "wrist": 1500,
     "rotate": 1400,
@@ -82,8 +82,8 @@ top_right = {
 # Center
 center_left = {
     "base": 1680,
-    "shoulder": 1500,
-    "elbow": 1650,
+    "shoulder": 1450,
+    "elbow": 1600,
     "wrist": 1300,
     "rotate": 1400,
 }
@@ -108,7 +108,7 @@ center_right = {
 # Bottom
 
 bottom_left = {
-    "base": 1620,
+    "base": 1630,
     "shoulder": 1200,
     "elbow": 1300,
     "wrist": 1300,
