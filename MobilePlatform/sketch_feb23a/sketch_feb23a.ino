@@ -29,6 +29,16 @@ RF24 radio( 10, 9 ); //Yep, using the wireless occupies ALL our SPI pins!
 uint8_t remote[]={"Remot"}; //Identifies controller
 uint8_t motor[]={"Motor"}; //Identifies mobile platform
 
+
+bool is_reversing = false;
+
+void setMotorSpeed(MotoronI2C controller, uint8_t motor, int16_t speed, bool set_reversing = true) {
+  controller.setSpeed(motor, speed);
+  if (set_reversing) {
+      is_reversing = speed > 0;
+  }
+}
+
 void setup() {
   Serial.begin(115200); //Needed before we start printing. Click the upper-right corner for the 'Serial Monitor'
   pinMode(REFLECT_A,INPUT);
@@ -68,6 +78,8 @@ void setup() {
 const int16_t SPEED=800;//600;
 const int16_t HALF_SPEED=400;//300;
 
+const int line_threshold = 950; // 925 min 975 max
+
 bool flip=false;
 void loop() {
   unsigned char payload[3];
@@ -78,52 +90,59 @@ void loop() {
     //payload[0] is X, [1] is Y, [2] is CZ
     //if (payload[2] == 0) digitalWrite(4,LOW); // shutoff, not working
     if (payload[2] == 0 || !digitalRead(BUMP) ){
-        mc.setSpeed(1,0);
+        setMotorSpeed(mc, 1, 0);
         delay(1);
-        mc.setSpeed(2,0);
+        setMotorSpeed(mc, 2, 0);
+    }
+    else if (analogRead(LINE_LEFT) > line_threshold || analogRead(LINE_MIDDLE) > line_threshold || analogRead(LINE_RIGHT) > line_threshold) {
+        int16_t speed = is_reversing ? -HALF_SPEED : HALF_SPEED;
+        setMotorSpeed(mc, 1, speed, false);
+        delay(1);
+        setMotorSpeed(mc, 2, speed, false);
     } 
     else if (digitalRead(REFLECT_A) == 0 || digitalRead(REFLECT_B) == 0 || ranger.ReadDistance() < 15.0) {
-        mc.setSpeed(1,HALF_SPEED);
+        int16_t speed = is_reversing ? -HALF_SPEED : HALF_SPEED;
+        setMotorSpeed(mc, 1, speed, false);
         delay(1);
-        mc.setSpeed(2,HALF_SPEED);
+        setMotorSpeed(mc, 2, speed, false);
     }
     else if (payload[1]>150) {
       if (payload[0]<100) {
-        mc.setSpeed(1,-HALF_SPEED);
+        setMotorSpeed(mc, 1, -HALF_SPEED);
         delay(1);
-        mc.setSpeed(2,-SPEED);
+        setMotorSpeed(mc, 2, -SPEED);
       }
       else if (payload[0]>150) {
-        mc.setSpeed(1,-SPEED);
+        setMotorSpeed(mc, 1, -SPEED);
         delay(1);
-        mc.setSpeed(2,-HALF_SPEED);
+        setMotorSpeed(mc, 2, -HALF_SPEED);
       }
       else {
-        mc.setSpeed(1,-SPEED);
+        setMotorSpeed(mc, 1, -SPEED);
         delay(1);
-        mc.setSpeed(2,-SPEED);
+        setMotorSpeed(mc, 2, -SPEED);
       }
     }
     else if (payload[1]<100) {
-      mc.setSpeed(1,SPEED);
+        setMotorSpeed(mc, 1, SPEED);
         delay(1);
-      mc.setSpeed(2,SPEED);
+        setMotorSpeed(mc, 2, SPEED);
     }
     else {
       if (payload[0]<100) {
-        mc.setSpeed(1,SPEED);
+        setMotorSpeed(mc, 1, SPEED);
         delay(1);
-        mc.setSpeed(2,-SPEED);
+        setMotorSpeed(mc, 2, -SPEED);
       }
       else if (payload[0]>150) {
-        mc.setSpeed(1,-SPEED);
+        setMotorSpeed(mc, 1, -SPEED);
         delay(1);
-        mc.setSpeed(2,SPEED);
+        setMotorSpeed(mc, 2, SPEED);
       }
       else{
-        mc.setSpeed(1,0);
+        setMotorSpeed(mc, 1, 0);
         delay(1);
-        mc.setSpeed(2,0);
+        setMotorSpeed(mc, 2, 0);
       }
     }
   }
