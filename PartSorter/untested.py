@@ -40,6 +40,7 @@ SHAPE_SCORE_THRESHOLD = 0.45
 SHAPE_SCORE_THRESHOLD_FAR = 0.60
 SHAPE_SCORE_GAP = 0.01
 FAR_AREA_RATIO_THRESHOLD = 0.0012
+L_SKEW_PROFILE_SWAP_MARGIN = 0.08
 COLOR_BLACK_V = 35
 COLOR_LOW_SAT = 45
 COLOR_BLACK = "Black"
@@ -552,17 +553,15 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 		template_bitmaps = TEMPLATE_BITMAPS.get(label, [])
 		template_profiles = TEMPLATE_DEFECT_PROFILES.get(label, [])
 		for idx, template in enumerate(templates):
-			match_i1 = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I1, 0.0)
-			match_i2 = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I2, 0.0)
-			match_score = (0.72 * match_i1) + (0.28 * match_i2)
+			match_score = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I1, 0.0)
 			tb = template_bitmaps[idx] if idx < len(template_bitmaps) else None
 			if tb is not None:
 				diff = cv2.countNonZero(cv2.absdiff(candidate_bitmap, tb))
 				raster_score = diff / float(TEMPLATE_CANVAS_SIZE * TEMPLATE_CANVAS_SIZE)
-				match_score = (0.70 * match_score) + (0.30 * raster_score)
+				match_score = min(match_score, raster_score)
 
 			profile_penalty = 0.0
-			if idx < len(template_profiles):
+			if idx < len(template_profiles) and label in ("L", "Skew"):
 				t_count, t_mean, t_max = template_profiles[idx]
 				c_count, c_mean, c_max = candidate_profile
 				profile_penalty += abs(c_count - t_count) * DEFECT_PENALTY
@@ -589,7 +588,7 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 					second_label_raw = label_best_score
 			DEBUG_INFO.append(f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} combined={combined_score:.3f}")
 
-	if best_score > score_threshold * 2:
+	if best_score > score_threshold:
 		return "Unknown"
 
 		# L vs Skew tie-break uses concavity profile from hull defects.
@@ -600,7 +599,7 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 		second_profile = min(second_profiles, key=lambda p: (abs(candidate_defect_count - p[0]) + abs(candidate_profile[0] - p[0]))) if second_profiles else (0, 0.0, 0.0)
 		best_defect_delta = abs(candidate_profile[0] - best_profile[0]) + abs(candidate_profile[1] - best_profile[1]) + abs(candidate_profile[2] - best_profile[2])
 		second_defect_delta = abs(candidate_profile[0] - second_profile[0]) + abs(candidate_profile[1] - second_profile[1]) + abs(candidate_profile[2] - second_profile[2])
-		if second_defect_delta < best_defect_delta:
+		if second_defect_delta + L_SKEW_PROFILE_SWAP_MARGIN < best_defect_delta:
 			best_label = second_label
 			best_score, second_score = second_score, best_score
 			best_label_raw, second_label_raw = second_label_raw, best_label_raw
