@@ -1,0 +1,1 @@
+[ WARN:0@13.183] global cap_msmf.cpp:1795 CvCapture_MSMF::grabFrame videoio(MSMF): can't grab frame. Error: -2147483638
