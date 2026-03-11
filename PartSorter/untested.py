@@ -65,6 +65,8 @@ DEBUG_PRINT_EVERY = 30
 DEBUG_PRINT_LINES = 22
 DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detection_debug.log")
 DEBUG_LOG_FILE = None
+LAST_DETECTED_KEY = None
+LAST_DETECTED_ACTION = None
 
 
 def _open_debug_log():
@@ -87,6 +89,24 @@ def _log_debug(lines):
 		DEBUG_LOG_FILE.flush()
 	except Exception:
 		pass
+
+
+def _clean_shape_name(shape_with_score):
+	if not shape_with_score:
+		return "Unknown"
+	return shape_with_score.split("(")[0].strip()
+
+
+def _direction_from_detected_shape(shape_name, color_name):
+	if shape_name == "Skew" and color_name == "Orange":
+		return "left"
+	if shape_name == "L" and color_name == "Green":
+		return "left"
+	if shape_name == "Skew" and color_name == "Green":
+		return "right"
+	if shape_name == "L" and color_name == "Orange":
+		return "right"
+	return "outward"
 
 
 def _reset_motion_models():
@@ -289,7 +309,7 @@ def update_feed():
 def annotate_shape(frame):
 	working = frame.copy()
 	frame_area = working.shape[0] * working.shape[1]
-	global background_frame, background_calibrated, calibration_frames, DEBUG_INFO, DEBUG_MASK, FG_STABLE_MASK, NO_CONTOUR_STREAK
+	global background_frame, background_calibrated, calibration_frames, DEBUG_INFO, DEBUG_MASK, FG_STABLE_MASK, NO_CONTOUR_STREAK, LAST_DETECTED_KEY, LAST_DETECTED_ACTION
 	near_min_area = max(MIN_SHAPE_AREA, int(frame_area * MIN_SHAPE_AREA_RATIO_NEAR))
 	far_min_area = max(MIN_SHAPE_AREA_FAR, int(frame_area * MIN_SHAPE_AREA_RATIO_FAR))
 	DEBUG_INFO = [
@@ -402,7 +422,7 @@ def annotate_shape(frame):
 
 	if not contours:
 		DEBUG_INFO.append("no contours found")
-		global NO_CONTOUR_STREAK
+		global NO_CONTOUR_STREAK, LAST_DETECTED_KEY
 		NO_CONTOUR_STREAK += 1
 		if NO_CONTOUR_STREAK >= NO_CONTOUR_RESET_LIMIT:
 			_log_debug(f"Recovery reset: no contours for {NO_CONTOUR_STREAK} frames")
@@ -411,6 +431,8 @@ def annotate_shape(frame):
 		else:
 			DEBUG_MASK = cv2.cvtColor(working, cv2.COLOR_BGR2GRAY)
 			DEBUG_MASK = cv2.cvtColor(DEBUG_MASK, cv2.COLOR_GRAY2BGR)
+		LAST_DETECTED_KEY = None
+		LAST_DETECTED_ACTION = None
 		return working
 
 	max_area = frame_area * MAX_SHAPE_AREA_RATIO
@@ -493,6 +515,19 @@ def annotate_shape(frame):
 	color_label = classify_color(working, largest)
 	shape_label = f"{shape_label} / {color_label}"
 	DEBUG_INFO.append(f"label={shape_label}")
+
+	raw_shape_name = _clean_shape_name(shape_label.split(" / ")[0])
+	direction_command = _direction_from_detected_shape(raw_shape_name, color_label)
+	detection_key = f"{raw_shape_name}|{color_label}"
+	if (
+		LAST_DETECTED_KEY != detection_key
+		or LAST_DETECTED_ACTION != direction_command
+	):
+		print(direction_command)
+		LAST_DETECTED_KEY = detection_key
+		LAST_DETECTED_ACTION = direction_command
+	DEBUG_INFO.append(f"action={direction_command}")
+	
 	cv2.putText(
 		working,
 		shape_label,
