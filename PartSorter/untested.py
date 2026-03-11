@@ -54,6 +54,8 @@ DEFECT_DEPTH_THRESHOLD = 4.0
 DEFECT_PENALTY = 0.09
 DEFECT_MEAN_PENALTY = 0.03
 PROFILE_PENALTY_MAX = 0.35
+COMPLEXITY_PENALTY = 0.030
+VERTEX_PENALTY = 0.015
 DEBUG_INFO = []
 DEBUG_TICK = 0
 SHOW_DEBUG_TEXT = False
@@ -199,6 +201,16 @@ def _convex_defect_profile(contour):
 	return (int(len(depths)), float(np.mean(depths)), float(np.max(depths)))
 
 
+def _shape_complexity(contour):
+	if contour is None or len(contour) < 3:
+		return 0.0
+	area = abs(cv2.contourArea(contour))
+	if area <= 0.0:
+		return 0.0
+	perim = cv2.arcLength(contour, True)
+	return perim / (np.sqrt(area) + 1e-6)
+
+
 TEMPLATE_BANK = {
 	"T": [_T_TEMPLATE] + _rotations(_T_TEMPLATE),
 	"Skew": [_SKew_TEMPLATE] + _rotations(_SKew_TEMPLATE),
@@ -207,17 +219,25 @@ TEMPLATE_BANK = {
 TEMPLATE_BITMAPS = {}
 TEMPLATE_DEFECT_COUNTS = {}
 TEMPLATE_DEFECT_PROFILES = {}
+TEMPLATE_COMPLEXITY = {}
+TEMPLATE_VERTEX_COUNTS = {}
 for _label, _templates in TEMPLATE_BANK.items():
 	_BITMAPS = []
 	_DEFECT_COUNTS = []
 	_PROFILES = []
+	_COMPLEXITY = []
+	_VERTEX = []
 	for _template in _templates:
 		_BITMAPS.append(_contour_to_canvas(_template, size=TEMPLATE_CANVAS_SIZE))
 		_DEFECT_COUNTS.append(_convex_defect_count(_template))
 		_PROFILES.append(_convex_defect_profile(_template))
+		_COMPLEXITY.append(_shape_complexity(_template))
+		_VERTEX.append(len(_template))
 	TEMPLATE_BITMAPS[_label] = _BITMAPS
 	TEMPLATE_DEFECT_COUNTS[_label] = int(round(np.median(_DEFECT_COUNTS))) if _DEFECT_COUNTS else 0
 	TEMPLATE_DEFECT_PROFILES[_label] = _PROFILES
+	TEMPLATE_COMPLEXITY[_label] = float(np.median(_COMPLEXITY)) if _COMPLEXITY else 0.0
+	TEMPLATE_VERTEX_COUNTS[_label] = float(np.median(_VERTEX)) if _VERTEX else 0.0
 
 
 def update_feed():
@@ -546,6 +566,8 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 	if candidate_bitmap is None:
 		candidate_bitmap = np.zeros((TEMPLATE_CANVAS_SIZE, TEMPLATE_CANVAS_SIZE), dtype=np.uint8)
 	candidate_profile = _convex_defect_profile(normalized)
+	candidate_complexity = _shape_complexity(normalized)
+	candidate_vertices = float(len(normalized))
 
 	candidate_defect_count = _convex_defect_count(normalized)
 	for label, templates in TEMPLATE_BANK.items():
@@ -573,7 +595,14 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 		label_name = label
 		if label_best_score < 1e9:
 			geometry_delta = abs(candidate_defect_count - TEMPLATE_DEFECT_COUNTS.get(label_name, 0)) * DEFECT_PENALTY
-			combined_score = label_best_score + geometry_delta
+			complexity_delta = abs(candidate_complexity - TEMPLATE_COMPLEXITY.get(label_name, 0.0))
+			vertex_delta = abs(candidate_vertices - TEMPLATE_VERTEX_COUNTS.get(label_name, 0.0))
+			combined_score = (
+				label_best_score
+				+ geometry_delta
+				+ (complexity_delta * COMPLEXITY_PENALTY)
+				+ (vertex_delta * VERTEX_PENALTY)
+			)
 			if combined_score < second_score:
 				if combined_score < best_score:
 					second_score = best_score
@@ -586,7 +615,10 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 					second_score = combined_score
 					second_label = label_name
 					second_label_raw = label_best_score
-			DEBUG_INFO.append(f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} combined={combined_score:.3f}")
+			DEBUG_INFO.append(
+				f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} "
+				f"comp={complexity_delta:.3f} verts={vertex_delta:.0f} combined={combined_score:.3f}"
+			)
 
 	if best_score > score_threshold:
 		return "Unknown"
@@ -604,6 +636,23 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 			best_score, second_score = second_score, best_score
 			best_label_raw, second_label_raw = second_label_raw, best_label_raw
 			DEBUG_INFO.append(f"classify tie-break: {best_label} closer in defect count")
+
+	# If T only barely wins against L/Skew, prefer whichever has closer complexity profile.
+	if best_label == "T" and second_label in ("L", "Skew") and (second_score - best_score) < (SHAPE_SCORE_GAP * 2):
+		second_complexity_delta = abs(
+			candidate_complexity - TEMPLATE_COMPLEXITY.get(second_label, 0.0)
+		)
+		best_complexity_delta = abs(
+			candidate_complexity - TEMPLATE_COMPLEXITY.get(best_label, 0.0)
+		)
+		if second_complexity_delta + L_SKEW_PROFILE_SWAP_MARGIN < best_complexity_delta:
+			best_label = second_label
+			best_score, second_score = second_score, best_score
+			best_label_raw, second_label_raw = second_label_raw, best_label_raw
+			DEBUG_INFO.append(
+				"classify tie-break: switched from T to"
+				f" {best_label} due complexity proximity"
+			)
 
 	if second_label_raw < 1e9:
 		DEBUG_INFO.append(f"classify raw scores: best={best_label_raw:.3f} second={second_label_raw:.3f} gap={second_label_raw - best_label_raw:.3f}")
