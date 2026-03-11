@@ -41,7 +41,7 @@ class ScannerApp:
 
         self.debug_btn = tk.Button(controls, text="Show debug overlay", command=self.toggle_debug_overlay)
         self.debug_btn.pack(side=tk.LEFT, padx=8)
-        self.min_size_var = tk.IntVar(value=int(self.detector.cfg.min_shape_area))
+        self.min_size_var = tk.IntVar(value=int(self.detector.min_shape_area))
         self.min_size_label = tk.Label(controls, text=f"Min object size: {self.min_size_var.get()}")
         self.min_size_label.pack(side=tk.LEFT, padx=(16, 6))
         self.min_size_scale = tk.Scale(
@@ -144,9 +144,7 @@ class ScannerApp:
 
     def on_min_size_change(self, value: str) -> None:
         min_area = max(1, int(float(value)))
-        self.detector.cfg.min_shape_area = min_area
-        # Keep far-range threshold coupled so behavior is predictable at distance.
-        self.detector.cfg.min_shape_area_far = max(10, min_area // 3)
+        self.detector.set_min_object_area(min_area)
         self.min_size_label.config(text=f"Min object size: {min_area}")
 
     def _open_debug_log(self) -> None:
