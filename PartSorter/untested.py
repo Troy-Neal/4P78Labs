@@ -40,6 +40,11 @@ SHAPE_SCORE_THRESHOLD = 0.45
 SHAPE_SCORE_THRESHOLD_FAR = 0.60
 SHAPE_SCORE_GAP = 0.01
 FAR_AREA_RATIO_THRESHOLD = 0.0012
+COLOR_BLACK_V = 35
+COLOR_LOW_SAT = 45
+COLOR_BLACK = "Black"
+COLOR_WHITE = "White"
+COLOR_GRAY = "Gray"
 FG_THRESHOLD = 80
 FG_ALPHA = 0.35
 FG_DECAY = 0.82
@@ -432,6 +437,8 @@ def annotate_shape(frame):
 		DEBUG_INFO.append(f"score threshold={score_threshold:.2f}")
 	else:
 		shape_label = "Unknown"
+	color_label = classify_color(working, largest)
+	shape_label = f"{shape_label} / {color_label}"
 	DEBUG_INFO.append(f"label={shape_label}")
 	cv2.putText(
 		working,
@@ -444,6 +451,53 @@ def annotate_shape(frame):
 		cv2.LINE_AA,
 	)
 	return working
+
+
+def classify_color(frame, contour):
+	if contour is None or len(contour) < 3:
+		return "Unknown"
+	region = frame.copy()
+	mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+	cv2.drawContours(mask, [contour], -1, 255, -1)
+	masked = cv2.bitwise_and(region, region, mask=mask)
+	hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
+	v = hsv[:, :, 2][mask > 0]
+	if v.size == 0:
+		return "Unknown"
+	if np.mean(v) <= COLOR_BLACK_V:
+		return COLOR_BLACK
+
+	s = hsv[:, :, 1][mask > 0]
+	h = hsv[:, :, 0][mask > 0]
+	valid = (s >= COLOR_LOW_SAT)
+	if np.count_nonzero(valid) == 0:
+		avg_v = np.mean(v)
+		return COLOR_WHITE if avg_v > 190 else COLOR_GRAY
+	hue = float(np.median(h[valid]))
+	sat = float(np.mean(s[valid]))
+	val = float(np.mean(v[valid]))
+
+	if val < 50:
+		return COLOR_BLACK
+	if sat < 45 and val > 190:
+		return COLOR_WHITE
+	if sat < 55:
+		return COLOR_GRAY
+	if hue < 10 or hue >= 170:
+		return "Red"
+	if hue < 25:
+		return "Orange"
+	if hue < 35:
+		return "Yellow"
+	if hue < 78:
+		return "Green"
+	if hue < 95:
+		return "Cyan"
+	if hue < 115:
+		return "Blue"
+	if hue < 150:
+		return "Purple"
+	return "Magenta"
 
 
 def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
