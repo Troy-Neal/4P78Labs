@@ -39,6 +39,7 @@ SHAPE_AREA_PADDING = 3
 SHAPE_SCORE_THRESHOLD = 0.45
 SHAPE_SCORE_THRESHOLD_FAR = 0.60
 SHAPE_SCORE_GAP = 0.01
+SHAPE_SCORE_GAP_LT = 0.03
 FAR_AREA_RATIO_THRESHOLD = 0.0012
 COLOR_BLACK_V = 35
 COLOR_LOW_SAT = 45
@@ -51,6 +52,7 @@ FG_DECAY = 0.82
 FG_INIT_FRAMES = 10
 DEFECT_DEPTH_THRESHOLD = 4.0
 DEFECT_PENALTY = 0.09
+SIDE_COUNT_PENALTY = 0.035
 MOTION_PX_FOR_STALE_BG = 4500
 DEBUG_INFO = []
 DEBUG_TICK = 0
@@ -67,6 +69,11 @@ DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detec
 DEBUG_LOG_FILE = None
 LAST_DETECTED_KEY = None
 LAST_DETECTED_ACTION = None
+STABLE_SHAPE_NAME = None
+PENDING_SHAPE_NAME = None
+PENDING_SHAPE_COUNT = 0
+SHAPE_SWITCH_FRAMES = 4
+SHAPE_SWITCH_FRAMES_UNKNOWN = 6
 
 
 def _open_debug_log():
@@ -95,6 +102,50 @@ def _clean_shape_name(shape_with_score):
 	if not shape_with_score:
 		return "Unknown"
 	return shape_with_score.split("(")[0].strip()
+
+
+def _extract_shape_score(shape_with_score):
+	if not shape_with_score:
+		return None
+	start = shape_with_score.find("(")
+	end = shape_with_score.find(")", start + 1)
+	if start == -1 or end == -1:
+		return None
+	try:
+		return float(shape_with_score[start + 1:end])
+	except Exception:
+		return None
+
+
+def _stabilize_shape_name(candidate_shape):
+	global STABLE_SHAPE_NAME, PENDING_SHAPE_NAME, PENDING_SHAPE_COUNT
+	if not candidate_shape:
+		candidate_shape = "Unknown"
+
+	if STABLE_SHAPE_NAME is None:
+		STABLE_SHAPE_NAME = candidate_shape
+		PENDING_SHAPE_NAME = None
+		PENDING_SHAPE_COUNT = 0
+		return STABLE_SHAPE_NAME
+
+	if candidate_shape == STABLE_SHAPE_NAME:
+		PENDING_SHAPE_NAME = None
+		PENDING_SHAPE_COUNT = 0
+		return STABLE_SHAPE_NAME
+
+	if candidate_shape == PENDING_SHAPE_NAME:
+		PENDING_SHAPE_COUNT += 1
+	else:
+		PENDING_SHAPE_NAME = candidate_shape
+		PENDING_SHAPE_COUNT = 1
+
+	required = SHAPE_SWITCH_FRAMES_UNKNOWN if candidate_shape == "Unknown" else SHAPE_SWITCH_FRAMES
+	if PENDING_SHAPE_COUNT >= required:
+		STABLE_SHAPE_NAME = candidate_shape
+		PENDING_SHAPE_NAME = None
+		PENDING_SHAPE_COUNT = 0
+
+	return STABLE_SHAPE_NAME
 
 
 def _direction_from_detected_shape(shape_name, color_name):
@@ -236,17 +287,24 @@ TEMPLATE_BANK = {
 TEMPLATE_BITMAPS = {}
 TEMPLATE_DEFECT_COUNTS = {}
 TEMPLATE_DEFECT_PROFILES = {}
+TEMPLATE_SIDE_COUNTS = {}
 for _label, _templates in TEMPLATE_BANK.items():
 	_BITMAPS = []
 	_DEFECT_COUNTS = []
 	_PROFILES = []
+	_SIDE_COUNTS = []
 	for _template in _templates:
 		_BITMAPS.append(_contour_to_canvas(_template, size=TEMPLATE_CANVAS_SIZE))
 		_DEFECT_COUNTS.append(_convex_defect_count(_template))
 		_PROFILES.append(_convex_defect_profile(_template))
+		_template_perim = cv2.arcLength(_template, True)
+		_template_eps = 0.030 * _template_perim if _template_perim > 0 else 0.0
+		_template_poly = cv2.approxPolyDP(_template, _template_eps, True) if _template_eps > 0 else _template
+		_SIDE_COUNTS.append(len(_template_poly))
 	TEMPLATE_BITMAPS[_label] = _BITMAPS
 	TEMPLATE_DEFECT_COUNTS[_label] = int(round(np.median(_DEFECT_COUNTS))) if _DEFECT_COUNTS else 0
 	TEMPLATE_DEFECT_PROFILES[_label] = _PROFILES
+	TEMPLATE_SIDE_COUNTS[_label] = int(round(np.median(_SIDE_COUNTS))) if _SIDE_COUNTS else 0
 
 
 def update_feed():
@@ -422,7 +480,7 @@ def annotate_shape(frame):
 
 	if not contours:
 		DEBUG_INFO.append("no contours found")
-		global NO_CONTOUR_STREAK, LAST_DETECTED_KEY
+		global NO_CONTOUR_STREAK, LAST_DETECTED_KEY, STABLE_SHAPE_NAME, PENDING_SHAPE_NAME, PENDING_SHAPE_COUNT
 		NO_CONTOUR_STREAK += 1
 		if NO_CONTOUR_STREAK >= NO_CONTOUR_RESET_LIMIT:
 			_log_debug(f"Recovery reset: no contours for {NO_CONTOUR_STREAK} frames")
@@ -433,6 +491,9 @@ def annotate_shape(frame):
 			DEBUG_MASK = cv2.cvtColor(DEBUG_MASK, cv2.COLOR_GRAY2BGR)
 		LAST_DETECTED_KEY = None
 		LAST_DETECTED_ACTION = None
+		STABLE_SHAPE_NAME = None
+		PENDING_SHAPE_NAME = None
+		PENDING_SHAPE_COUNT = 0
 		return working
 
 	max_area = frame_area * MAX_SHAPE_AREA_RATIO
@@ -501,24 +562,27 @@ def annotate_shape(frame):
 	area = cv2.contourArea(largest)
 	DEBUG_INFO.append(f"chosen area={int(area)}")
 	x, y, w, h = cv2.boundingRect(largest)
-	x = max(0, x - SHAPE_AREA_PADDING)
-	y = max(0, y - SHAPE_AREA_PADDING)
-	w = min(working.shape[1] - x, w + SHAPE_AREA_PADDING * 2)
-	h = min(working.shape[0] - y, h + SHAPE_AREA_PADDING * 2)
-	cv2.rectangle(working, (x, y), (x + w, y + h), (0, 255, 0), 2)
+	cv2.drawContours(working, [largest], -1, (0, 255, 0), 2)
 	shape_area_ratio = area / float(frame_area) if frame_area else 0.0
 	score_threshold = SHAPE_SCORE_THRESHOLD_FAR if shape_area_ratio <= FAR_AREA_RATIO_THRESHOLD else SHAPE_SCORE_THRESHOLD
 	if not using_strict_shape:
 		score_threshold = min(1.0, score_threshold * 1.25)
-	shape_label = classify_shape(largest, score_threshold=score_threshold)
+	raw_shape_label = classify_shape(largest, score_threshold=score_threshold)
 	DEBUG_INFO.append(f"score threshold={score_threshold:.2f}")
 	color_label = classify_color(working, largest)
-	shape_label = f"{shape_label} / {color_label}"
+	raw_shape_name = _clean_shape_name(raw_shape_label)
+	raw_shape_score = _extract_shape_score(raw_shape_label)
+	stable_shape_name = _stabilize_shape_name(raw_shape_name)
+	if stable_shape_name != raw_shape_name:
+		DEBUG_INFO.append(f"shape stable:{stable_shape_name} pending:{raw_shape_name}")
+	if raw_shape_score is None:
+		shape_label = f"{stable_shape_name} / {color_label}"
+	else:
+		shape_label = f"{stable_shape_name} ({raw_shape_score:.3f}) / {color_label}"
 	DEBUG_INFO.append(f"label={shape_label}")
 
-	raw_shape_name = _clean_shape_name(shape_label.split(" / ")[0])
-	direction_command = _direction_from_detected_shape(raw_shape_name, color_label)
-	detection_key = f"{raw_shape_name}|{color_label}"
+	direction_command = _direction_from_detected_shape(stable_shape_name, color_label)
+	detection_key = f"{stable_shape_name}|{color_label}"
 	if (
 		LAST_DETECTED_KEY != detection_key
 		or LAST_DETECTED_ACTION != direction_command
@@ -592,6 +656,7 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 		return best_label
 	epsilon = 0.030 * cv2.arcLength(normalized, True)
 	normalized = cv2.approxPolyDP(normalized, epsilon, True)
+	candidate_side_count = len(normalized)
 	candidate_bitmap = _contour_to_canvas(normalized, size=TEMPLATE_CANVAS_SIZE)
 	if candidate_bitmap is None:
 		candidate_bitmap = np.zeros((TEMPLATE_CANVAS_SIZE, TEMPLATE_CANVAS_SIZE), dtype=np.uint8)
@@ -612,7 +677,8 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 		label_name = label
 		if label_best_score < 1e9:
 			geometry_delta = abs(candidate_defect_count - TEMPLATE_DEFECT_COUNTS.get(label_name, 0)) * DEFECT_PENALTY
-			combined_score = label_best_score + geometry_delta
+			side_delta = abs(candidate_side_count - TEMPLATE_SIDE_COUNTS.get(label_name, candidate_side_count)) * SIDE_COUNT_PENALTY
+			combined_score = label_best_score + geometry_delta + side_delta
 			if combined_score < second_score:
 				if combined_score < best_score:
 					second_score = best_score
@@ -626,30 +692,59 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 					second_label = label_name
 					second_label_raw = label_best_score
 				DEBUG_INFO.append(
-				f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} combined={combined_score:.3f}"
+				f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} sides={side_delta:.3f} combined={combined_score:.3f}"
 			)
 
 	if best_score > score_threshold:
 		return "Unknown"
 
+	def _closest_template_profile(label_name):
+		profiles = TEMPLATE_DEFECT_PROFILES.get(label_name, [])
+		if not profiles:
+			return (0, 0.0, 0.0)
+		return min(
+			profiles,
+			key=lambda p: (
+				abs(candidate_defect_count - p[0]) +
+				abs(candidate_profile[0] - p[0])
+			),
+		)
+
+	def _profile_delta(profile):
+		return (
+			abs(candidate_profile[0] - profile[0]) +
+			abs(candidate_profile[1] - profile[1]) +
+			abs(candidate_profile[2] - profile[2])
+		)
+
 	# L vs Skew tie-break uses concavity count from hull defects.
 	if second_label in ("L", "Skew") and best_label in ("L", "Skew") and (second_score - best_score) < SHAPE_SCORE_GAP:
-		best_profiles = TEMPLATE_DEFECT_PROFILES.get(best_label, [])
-		second_profiles = TEMPLATE_DEFECT_PROFILES.get(second_label, [])
-		best_profile = min(best_profiles, key=lambda p: (abs(candidate_defect_count - p[0]) + abs(candidate_profile[0] - p[0]))) if best_profiles else (0, 0.0, 0.0)
-		second_profile = min(second_profiles, key=lambda p: (abs(candidate_defect_count - p[0]) + abs(candidate_profile[0] - p[0]))) if second_profiles else (0, 0.0, 0.0)
-		best_defect_delta = abs(candidate_profile[0] - best_profile[0]) + abs(candidate_profile[1] - best_profile[1]) + abs(candidate_profile[2] - best_profile[2])
-		second_defect_delta = abs(candidate_profile[0] - second_profile[0]) + abs(candidate_profile[1] - second_profile[1]) + abs(candidate_profile[2] - second_profile[2])
+		best_profile = _closest_template_profile(best_label)
+		second_profile = _closest_template_profile(second_label)
+		best_defect_delta = _profile_delta(best_profile)
+		second_defect_delta = _profile_delta(second_profile)
 		if second_defect_delta < best_defect_delta:
 			best_label = second_label
 			best_score, second_score = second_score, best_score
 			best_label_raw, second_label_raw = second_label_raw, best_label_raw
 			DEBUG_INFO.append(f"classify tie-break: {best_label} closer in defect count")
 
-		if second_label_raw < 1e9:
-			DEBUG_INFO.append(f"classify raw scores: best={best_label_raw:.3f} second={second_label_raw:.3f} gap={second_label_raw - best_label_raw:.3f}")
-		if second_score - best_score < SHAPE_SCORE_GAP:
-			DEBUG_INFO.append(f"classify gap={second_score - best_score:.4f}")
+	# L vs T tie-break for near-equal scores.
+	if second_label in ("L", "T") and best_label in ("L", "T") and (second_score - best_score) < SHAPE_SCORE_GAP_LT:
+		best_profile = _closest_template_profile(best_label)
+		second_profile = _closest_template_profile(second_label)
+		best_defect_delta = _profile_delta(best_profile)
+		second_defect_delta = _profile_delta(second_profile)
+		if second_defect_delta < best_defect_delta:
+			best_label = second_label
+			best_score, second_score = second_score, best_score
+			best_label_raw, second_label_raw = second_label_raw, best_label_raw
+			DEBUG_INFO.append(f"classify tie-break LT: {best_label} closer in defect profile")
+
+	if second_label_raw < 1e9:
+		DEBUG_INFO.append(f"classify raw scores: best={best_label_raw:.3f} second={second_label_raw:.3f} gap={second_label_raw - best_label_raw:.3f}")
+	if second_score - best_score < SHAPE_SCORE_GAP:
+		DEBUG_INFO.append(f"classify gap={second_score - best_score:.4f}")
 
 	return f"{best_label} ({best_score:.3f})"
 
