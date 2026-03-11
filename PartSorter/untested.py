@@ -12,7 +12,6 @@ import tkinter as tk
 import base64
 
 camera = cv2.VideoCapture(0)
-latest_frame = None
 background_frame = None
 background_calibrated = False
 calibration_frames = 0
@@ -180,7 +179,7 @@ for _label, _templates in TEMPLATE_BANK.items():
 
 
 def update_feed():
-	global latest_frame, DEBUG_TICK, SHOW_DEBUG_TEXT
+	global DEBUG_TICK, SHOW_DEBUG_TEXT
 	if not app_open:
 		return
 
@@ -193,7 +192,6 @@ def update_feed():
 		stop_scanning()
 		return
 
-	latest_frame = frame
 	display_frame = annotate_shape(frame)
 	if SHOW_DEBUG_TEXT:
 		for idx, msg in enumerate(DEBUG_INFO[:DEBUG_PRINT_LINES]):
