@@ -336,34 +336,34 @@ def annotate_shape(frame):
 	DEBUG_INFO.append(f"fg learning={fg_learning_rate}")
 	DEBUG_INFO.append(f"moving raw={moving_count}")
 
-		raw_float = moving_raw.astype(np.float32) / 255.0
+	raw_float = moving_raw.astype(np.float32) / 255.0
 
-		if FG_STABLE_MASK is None:
-			FG_STABLE_MASK = raw_float.copy()
-		else:
-			FG_STABLE_MASK = FG_STABLE_MASK * FG_DECAY
-			FG_STABLE_MASK = cv2.addWeighted(raw_float, FG_ALPHA, FG_STABLE_MASK, 1.0 - FG_ALPHA, 0.0)
-		_, stable_move = cv2.threshold(FG_STABLE_MASK, 0.50, 1.0, cv2.THRESH_BINARY)
-		moving_mask = (stable_move * 255).astype(np.uint8)
-		DEBUG_INFO.append(f"moving stable={int(np.count_nonzero(moving_mask))}")
-		DEBUG_INFO.append(f"bg_mask used={int(np.count_nonzero(bg_mask))}")
-		moving_pixels = int(np.count_nonzero(moving_mask))
-		edges = cv2.Canny(blurred, EDGE_LOW, EDGE_HIGH)
-		kernel = np.ones((5, 5), np.uint8)
-		edge_mask = cv2.dilate(edges, kernel, iterations=1)
-		bg_gate = cv2.dilate(bg_mask, np.ones((BG_GATE_DILATE, BG_GATE_DILATE), np.uint8), iterations=1)
-		low_motion = moving_pixels < MOTION_PX_FOR_STALE_BG
-		if low_motion:
-			shape_mask = cv2.bitwise_or(bg_mask, cv2.bitwise_and(edge_mask, bg_gate))
-		else:
-			shape_mask = cv2.bitwise_and(edge_mask, bg_gate)
-		DEBUG_INFO.append(f"bg_gate={int(np.count_nonzero(bg_gate))}")
+	if FG_STABLE_MASK is None:
+		FG_STABLE_MASK = raw_float.copy()
+	else:
+		FG_STABLE_MASK = FG_STABLE_MASK * FG_DECAY
+		FG_STABLE_MASK = cv2.addWeighted(raw_float, FG_ALPHA, FG_STABLE_MASK, 1.0 - FG_ALPHA, 0.0)
+	_, stable_move = cv2.threshold(FG_STABLE_MASK, 0.50, 1.0, cv2.THRESH_BINARY)
+	moving_mask = (stable_move * 255).astype(np.uint8)
+	DEBUG_INFO.append(f"moving stable={int(np.count_nonzero(moving_mask))}")
+	DEBUG_INFO.append(f"bg_mask used={int(np.count_nonzero(bg_mask))}")
+	moving_pixels = int(np.count_nonzero(moving_mask))
+	edges = cv2.Canny(blurred, EDGE_LOW, EDGE_HIGH)
+	kernel = np.ones((5, 5), np.uint8)
+	edge_mask = cv2.dilate(edges, kernel, iterations=1)
+	bg_gate = cv2.dilate(bg_mask, np.ones((BG_GATE_DILATE, BG_GATE_DILATE), np.uint8), iterations=1)
+	low_motion = moving_pixels < MOTION_PX_FOR_STALE_BG
+	if low_motion:
+		shape_mask = cv2.bitwise_or(bg_mask, cv2.bitwise_and(edge_mask, bg_gate))
+	else:
+		shape_mask = cv2.bitwise_and(edge_mask, bg_gate)
+	DEBUG_INFO.append(f"bg_gate={int(np.count_nonzero(bg_gate))}")
 
-		foreground_gate = moving_mask
-		if background_calibrated and not low_motion:
-			foreground_gate = cv2.bitwise_or(foreground_gate, bg_mask)
-		shape_mask = cv2.bitwise_and(shape_mask, cv2.morphologyEx(foreground_gate, cv2.MORPH_DILATE, np.ones((7, 7), np.uint8)))
-		DEBUG_INFO.append(f"foreground_gate={int(np.count_nonzero(foreground_gate))}")
+	foreground_gate = moving_mask
+	if background_calibrated and not low_motion:
+		foreground_gate = cv2.bitwise_or(foreground_gate, bg_mask)
+	shape_mask = cv2.bitwise_and(shape_mask, cv2.morphologyEx(foreground_gate, cv2.MORPH_DILATE, np.ones((7, 7), np.uint8)))
+	DEBUG_INFO.append(f"foreground_gate={int(np.count_nonzero(foreground_gate))}")
 
 	shape_mask = cv2.morphologyEx(shape_mask, cv2.MORPH_OPEN, kernel)
 	shape_mask = cv2.morphologyEx(shape_mask, cv2.MORPH_CLOSE, kernel)
@@ -536,21 +536,13 @@ def classify_color(frame, contour):
 		return COLOR_WHITE
 	if sat < 55:
 		return COLOR_GRAY
-	if hue < 10 or hue >= 170:
+	if hue < 6 or hue >= 170:
 		return "Red"
-	if hue < 25:
+	if hue < 15:
 		return "Orange"
-	if hue < 35:
-		return "Yellow"
 	if hue < 78:
 		return "Green"
-	if hue < 95:
-		return "Cyan"
-	if hue < 115:
-		return "Blue"
-	if hue < 150:
-		return "Purple"
-	return "Magenta"
+	return "Unknown"
 
 
 def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
@@ -687,8 +679,6 @@ else:
 
 window.mainloop()
 
-
-'''
 def bumper(sensor):
 	def bumpy():
 		while not sensor.get_sample():
@@ -737,10 +727,11 @@ def push_off():
 	motor_shoulder.turn(30, 110) 
 	motor_elbow.turn(30, 40)
 	motor_shoulder.turn(-70, 50) 
+'''
 prep()
 home()
 time.sleep(1)
-"""
+
 push_right()
 time.sleep(1)
 home()
@@ -755,6 +746,6 @@ time.sleep(1)
 
 home()
 time.sleep(1)
-"""
+
 cleanup() # for when you're done.
 '''
