@@ -51,6 +51,7 @@ FG_DECAY = 0.82
 FG_INIT_FRAMES = 10
 DEFECT_DEPTH_THRESHOLD = 4.0
 DEFECT_PENALTY = 0.09
+DEFECT_MEAN_PENALTY = 0.18
 DEBUG_INFO = []
 DEBUG_TICK = 0
 SHOW_DEBUG_TEXT = False
@@ -173,6 +174,29 @@ def _convex_defect_count(contour):
 	return count
 
 
+def _convex_defect_profile(contour):
+	if contour is None or len(contour) < 4:
+		return (0, 0.0, 0.0)
+	c = contour.astype(np.int32)
+	try:
+		hull = cv2.convexHull(c, returnPoints=False)
+	except Exception:
+		return (0, 0.0, 0.0)
+	if hull is None or len(hull) < 3:
+		return (0, 0.0, 0.0)
+	try:
+		defects = cv2.convexityDefects(c, hull)
+	except Exception:
+		return (0, 0.0, 0.0)
+	if defects is None or len(defects) == 0:
+		return (0, 0.0, 0.0)
+	depths = [float(d[0][3]) / 256.0 for d in defects if float(d[0][3]) / 256.0 >= DEFECT_DEPTH_THRESHOLD * 0.25]
+	if not depths:
+		return (0, 0.0, 0.0)
+	depths = np.array(depths, dtype=np.float32)
+	return (int(len(depths)), float(np.mean(depths)), float(np.max(depths)))
+
+
 TEMPLATE_BANK = {
 	"T": [_T_TEMPLATE] + _rotations(_T_TEMPLATE),
 	"Skew": [_SKew_TEMPLATE] + _rotations(_SKew_TEMPLATE),
@@ -180,14 +204,18 @@ TEMPLATE_BANK = {
 }
 TEMPLATE_BITMAPS = {}
 TEMPLATE_DEFECT_COUNTS = {}
+TEMPLATE_DEFECT_PROFILES = {}
 for _label, _templates in TEMPLATE_BANK.items():
 	_BITMAPS = []
 	_DEFECT_COUNTS = []
+	_PROFILES = []
 	for _template in _templates:
 		_BITMAPS.append(_contour_to_canvas(_template, size=TEMPLATE_CANVAS_SIZE))
 		_DEFECT_COUNTS.append(_convex_defect_count(_template))
+		_PROFILES.append(_convex_defect_profile(_template))
 	TEMPLATE_BITMAPS[_label] = _BITMAPS
 	TEMPLATE_DEFECT_COUNTS[_label] = int(round(np.median(_DEFECT_COUNTS))) if _DEFECT_COUNTS else 0
+	TEMPLATE_DEFECT_PROFILES[_label] = _PROFILES
 
 
 def update_feed():
@@ -515,20 +543,31 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 	candidate_bitmap = _contour_to_canvas(normalized, size=TEMPLATE_CANVAS_SIZE)
 	if candidate_bitmap is None:
 		candidate_bitmap = np.zeros((TEMPLATE_CANVAS_SIZE, TEMPLATE_CANVAS_SIZE), dtype=np.uint8)
+	candidate_profile = _convex_defect_profile(normalized)
 
 	candidate_defect_count = _convex_defect_count(normalized)
 	for label, templates in TEMPLATE_BANK.items():
 		label_best_score = 1e9
-		for template in templates:
-			match_score = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I1, 0.0)
-			score = match_score
-			templates_bitmap = TEMPLATE_BITMAPS.get(label, [])
-			for tb in templates_bitmap:
-				if tb is None:
-					continue
+		template_bitmaps = TEMPLATE_BITMAPS.get(label, [])
+		template_profiles = TEMPLATE_DEFECT_PROFILES.get(label, [])
+		for idx, template in enumerate(templates):
+			match_i1 = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I1, 0.0)
+			match_i2 = cv2.matchShapes(normalized, template, cv2.CONTOURS_MATCH_I2, 0.0)
+			match_score = (0.72 * match_i1) + (0.28 * match_i2)
+			tb = template_bitmaps[idx] if idx < len(template_bitmaps) else None
+			if tb is not None:
 				diff = cv2.countNonZero(cv2.absdiff(candidate_bitmap, tb))
 				raster_score = diff / float(TEMPLATE_CANVAS_SIZE * TEMPLATE_CANVAS_SIZE)
-				score = min(score, raster_score)
+				match_score = (0.70 * match_score) + (0.30 * raster_score)
+
+			profile_penalty = 0.0
+			if idx < len(template_profiles):
+				t_count, t_mean, t_max = template_profiles[idx]
+				c_count, c_mean, c_max = candidate_profile
+				profile_penalty += abs(c_count - t_count) * DEFECT_PENALTY
+				profile_penalty += abs(c_mean - t_mean) * DEFECT_MEAN_PENALTY
+				profile_penalty += abs(c_max - t_max) * DEFECT_MEAN_PENALTY
+			score = match_score + profile_penalty
 			label_best_score = min(label_best_score, score)
 		label_name = label
 		if label_best_score < 1e9:
@@ -551,10 +590,14 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 	if best_score > score_threshold:
 		return "Unknown"
 
-	# L vs Skew tie-break uses concavity count from hull defects.
+		# L vs Skew tie-break uses concavity profile from hull defects.
 	if second_label in ("L", "Skew") and best_label in ("L", "Skew") and (second_score - best_score) < SHAPE_SCORE_GAP:
-		best_defect_delta = abs(candidate_defect_count - TEMPLATE_DEFECT_COUNTS.get(best_label, 0))
-		second_defect_delta = abs(candidate_defect_count - TEMPLATE_DEFECT_COUNTS.get(second_label, 0))
+		best_profiles = TEMPLATE_DEFECT_PROFILES.get(best_label, [])
+		second_profiles = TEMPLATE_DEFECT_PROFILES.get(second_label, [])
+		best_profile = min(best_profiles, key=lambda p: (abs(candidate_defect_count - p[0]) + abs(candidate_profile[0] - p[0]))) if best_profiles else (0, 0.0, 0.0)
+		second_profile = min(second_profiles, key=lambda p: (abs(candidate_defect_count - p[0]) + abs(candidate_profile[0] - p[0]))) if second_profiles else (0, 0.0, 0.0)
+		best_defect_delta = abs(candidate_profile[0] - best_profile[0]) + abs(candidate_profile[1] - best_profile[1]) + abs(candidate_profile[2] - best_profile[2])
+		second_defect_delta = abs(candidate_profile[0] - second_profile[0]) + abs(candidate_profile[1] - second_profile[1]) + abs(candidate_profile[2] - second_profile[2])
 		if second_defect_delta < best_defect_delta:
 			best_label = second_label
 			best_score, second_score = second_score, best_score
