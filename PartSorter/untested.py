@@ -51,8 +51,11 @@ FG_DECAY = 0.82
 FG_INIT_FRAMES = 10
 DEFECT_DEPTH_THRESHOLD = 4.0
 DEFECT_PENALTY = 0.09
+MOTION_PX_FOR_STALE_BG = 4500
 DEBUG_INFO = []
 DEBUG_TICK = 0
+NO_CONTOUR_STREAK = 0
+NO_CONTOUR_RESET_LIMIT = 12
 SHOW_DEBUG_TEXT = False
 DEBUG_MASK = None
 FG_SUBTRACTOR = cv2.createBackgroundSubtractorMOG2(history=600, varThreshold=50, detectShadows=False)
@@ -84,6 +87,15 @@ def _log_debug(lines):
 		DEBUG_LOG_FILE.flush()
 	except Exception:
 		pass
+
+
+def _reset_motion_models():
+	global background_calibrated, background_frame, calibration_frames, FG_STABLE_MASK, FG_SUBTRACTOR
+	background_calibrated = False
+	background_frame = None
+	calibration_frames = 0
+	FG_STABLE_MASK = None
+	FG_SUBTRACTOR = cv2.createBackgroundSubtractorMOG2(history=600, varThreshold=50, detectShadows=False)
 
 
 def _set_tk_image(target_label, frame):
@@ -277,7 +289,7 @@ def update_feed():
 def annotate_shape(frame):
 	working = frame.copy()
 	frame_area = working.shape[0] * working.shape[1]
-	global background_frame, background_calibrated, calibration_frames, DEBUG_INFO, DEBUG_MASK, FG_STABLE_MASK
+	global background_frame, background_calibrated, calibration_frames, DEBUG_INFO, DEBUG_MASK, FG_STABLE_MASK, NO_CONTOUR_STREAK
 	near_min_area = max(MIN_SHAPE_AREA, int(frame_area * MIN_SHAPE_AREA_RATIO_NEAR))
 	far_min_area = max(MIN_SHAPE_AREA_FAR, int(frame_area * MIN_SHAPE_AREA_RATIO_FAR))
 	DEBUG_INFO = [
@@ -331,21 +343,26 @@ def annotate_shape(frame):
 	else:
 		FG_STABLE_MASK = FG_STABLE_MASK * FG_DECAY
 		FG_STABLE_MASK = cv2.addWeighted(raw_float, FG_ALPHA, FG_STABLE_MASK, 1.0 - FG_ALPHA, 0.0)
-	_, stable_move = cv2.threshold(FG_STABLE_MASK, 0.50, 1.0, cv2.THRESH_BINARY)
-	moving_mask = (stable_move * 255).astype(np.uint8)
-	DEBUG_INFO.append(f"moving stable={int(np.count_nonzero(moving_mask))}")
-	DEBUG_INFO.append(f"bg_mask used={int(np.count_nonzero(bg_mask))}")
-	edges = cv2.Canny(blurred, EDGE_LOW, EDGE_HIGH)
-	kernel = np.ones((5, 5), np.uint8)
-	edge_mask = cv2.dilate(edges, kernel, iterations=1)
-	bg_gate = cv2.dilate(bg_mask, np.ones((BG_GATE_DILATE, BG_GATE_DILATE), np.uint8), iterations=1)
-	shape_mask = cv2.bitwise_or(bg_mask, cv2.bitwise_and(edge_mask, bg_gate))
-	DEBUG_INFO.append(f"bg_gate={int(np.count_nonzero(bg_gate))}")
+		_, stable_move = cv2.threshold(FG_STABLE_MASK, 0.50, 1.0, cv2.THRESH_BINARY)
+		moving_mask = (stable_move * 255).astype(np.uint8)
+		DEBUG_INFO.append(f"moving stable={int(np.count_nonzero(moving_mask))}")
+		DEBUG_INFO.append(f"bg_mask used={int(np.count_nonzero(bg_mask))}")
+		moving_pixels = int(np.count_nonzero(moving_mask))
+		edges = cv2.Canny(blurred, EDGE_LOW, EDGE_HIGH)
+		kernel = np.ones((5, 5), np.uint8)
+		edge_mask = cv2.dilate(edges, kernel, iterations=1)
+		bg_gate = cv2.dilate(bg_mask, np.ones((BG_GATE_DILATE, BG_GATE_DILATE), np.uint8), iterations=1)
+		low_motion = moving_pixels < MOTION_PX_FOR_STALE_BG
+		if low_motion:
+			shape_mask = cv2.bitwise_or(bg_mask, cv2.bitwise_and(edge_mask, bg_gate))
+		else:
+			shape_mask = cv2.bitwise_and(edge_mask, bg_gate)
+		DEBUG_INFO.append(f"bg_gate={int(np.count_nonzero(bg_gate))}")
 
-	foreground_gate = moving_mask
-	if background_calibrated:
-		foreground_gate = cv2.bitwise_or(foreground_gate, bg_mask)
-	shape_mask = cv2.bitwise_and(shape_mask, cv2.morphologyEx(foreground_gate, cv2.MORPH_DILATE, np.ones((7, 7), np.uint8)))
+		foreground_gate = moving_mask
+		if background_calibrated and not low_motion:
+			foreground_gate = cv2.bitwise_or(foreground_gate, bg_mask)
+		shape_mask = cv2.bitwise_and(shape_mask, cv2.morphologyEx(foreground_gate, cv2.MORPH_DILATE, np.ones((7, 7), np.uint8)))
 	DEBUG_INFO.append(f"foreground_gate={int(np.count_nonzero(foreground_gate))}")
 
 	shape_mask = cv2.morphologyEx(shape_mask, cv2.MORPH_OPEN, kernel)
@@ -385,6 +402,15 @@ def annotate_shape(frame):
 
 	if not contours:
 		DEBUG_INFO.append("no contours found")
+		global NO_CONTOUR_STREAK
+		NO_CONTOUR_STREAK += 1
+		if NO_CONTOUR_STREAK >= NO_CONTOUR_RESET_LIMIT:
+			_log_debug(f"Recovery reset: no contours for {NO_CONTOUR_STREAK} frames")
+			_reset_motion_models()
+			NO_CONTOUR_STREAK = 0
+		else:
+			DEBUG_MASK = cv2.cvtColor(working, cv2.COLOR_BGR2GRAY)
+			DEBUG_MASK = cv2.cvtColor(DEBUG_MASK, cv2.COLOR_GRAY2BGR)
 		return working
 
 	max_area = frame_area * MAX_SHAPE_AREA_RATIO
@@ -449,6 +475,7 @@ def annotate_shape(frame):
 		using_strict_shape = True
 		DEBUG_INFO.append(f"strict shape accepted area={int(cv2.contourArea(largest))}")
 
+	NO_CONTOUR_STREAK = 0
 	area = cv2.contourArea(largest)
 	DEBUG_INFO.append(f"chosen area={int(area)}")
 	x, y, w, h = cv2.boundingRect(largest)
@@ -457,13 +484,12 @@ def annotate_shape(frame):
 	w = min(working.shape[1] - x, w + SHAPE_AREA_PADDING * 2)
 	h = min(working.shape[0] - y, h + SHAPE_AREA_PADDING * 2)
 	cv2.rectangle(working, (x, y), (x + w, y + h), (0, 255, 0), 2)
-	if using_strict_shape:
-		shape_area_ratio = area / float(frame_area) if frame_area else 0.0
-		score_threshold = SHAPE_SCORE_THRESHOLD_FAR if shape_area_ratio <= FAR_AREA_RATIO_THRESHOLD else SHAPE_SCORE_THRESHOLD
-		shape_label = classify_shape(largest, score_threshold=score_threshold)
-		DEBUG_INFO.append(f"score threshold={score_threshold:.2f}")
-	else:
-		shape_label = "Unknown"
+	shape_area_ratio = area / float(frame_area) if frame_area else 0.0
+	score_threshold = SHAPE_SCORE_THRESHOLD_FAR if shape_area_ratio <= FAR_AREA_RATIO_THRESHOLD else SHAPE_SCORE_THRESHOLD
+	if not using_strict_shape:
+		score_threshold = min(1.0, score_threshold * 1.25)
+	shape_label = classify_shape(largest, score_threshold=score_threshold)
+	DEBUG_INFO.append(f"score threshold={score_threshold:.2f}")
 	color_label = classify_color(working, largest)
 	shape_label = f"{shape_label} / {color_label}"
 	DEBUG_INFO.append(f"label={shape_label}")
