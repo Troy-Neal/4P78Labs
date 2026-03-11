@@ -11,7 +11,7 @@ import numpy as np
 import tkinter as tk
 import base64
 
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 background_frame = None
 background_calibrated = False
 calibration_frames = 0
@@ -19,6 +19,9 @@ running = True
 app_open = True
 MIN_SHAPE_AREA = 120
 MAX_SHAPE_AREA_RATIO = 0.30
+MIN_SHAPE_AREA_FAR = 40
+MIN_SHAPE_AREA_RATIO_NEAR = 0.0002
+MIN_SHAPE_AREA_RATIO_FAR = 0.00008
 CALIBRATION_FRAME_COUNT = 12
 DIFF_THRESHOLD = 8
 EDGE_LOW = 15
@@ -29,10 +32,14 @@ BG_OPEN_SIZE = 7
 BG_CLOSE_SIZE = 9
 BG_GATE_DILATE = 15
 SOLIDITY_MIN = 0.30
+SOLIDITY_MIN_FAR = 0.22
 EXTENT_MIN = 0.22
+EXTENT_MIN_FAR = 0.12
 SHAPE_AREA_PADDING = 3
 SHAPE_SCORE_THRESHOLD = 0.45
+SHAPE_SCORE_THRESHOLD_FAR = 0.60
 SHAPE_SCORE_GAP = 0.01
+FAR_AREA_RATIO_THRESHOLD = 0.0012
 FG_THRESHOLD = 80
 FG_ALPHA = 0.35
 FG_DECAY = 0.82
@@ -239,12 +246,14 @@ def annotate_shape(frame):
 	working = frame.copy()
 	frame_area = working.shape[0] * working.shape[1]
 	global background_frame, background_calibrated, calibration_frames, DEBUG_INFO, DEBUG_MASK, FG_STABLE_MASK
+	near_min_area = max(MIN_SHAPE_AREA, int(frame_area * MIN_SHAPE_AREA_RATIO_NEAR))
+	far_min_area = max(MIN_SHAPE_AREA_FAR, int(frame_area * MIN_SHAPE_AREA_RATIO_FAR))
 	DEBUG_INFO = [
 		f"frame={frame.shape[1]}x{frame.shape[0]}",
 		f"calibrated={background_calibrated}",
 	]
 
-	global_min_area = max(MIN_SHAPE_AREA, int(frame_area * 0.0002))
+	global_min_area = far_min_area
 
 	if not background_calibrated:
 		if background_frame is None:
@@ -316,7 +325,7 @@ def annotate_shape(frame):
 	mask_pixels = int(np.count_nonzero(shape_mask))
 	mask_area_min = max(MIN_SHAPE_AREA, int(frame_area * 0.0002))
 	DEBUG_INFO.append(f"mask pixels={mask_pixels}")
-	DEBUG_INFO.append(f"target area range={int(mask_area_min)}..{int(frame_area * MAX_SHAPE_AREA_RATIO)}")
+	DEBUG_INFO.append(f"target area range={int(global_min_area)}..{int(frame_area * MAX_SHAPE_AREA_RATIO)}")
 	DEBUG_MASK = cv2.cvtColor(shape_mask, cv2.COLOR_GRAY2BGR)
 
 	contours, _ = cv2.findContours(shape_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -355,8 +364,13 @@ def annotate_shape(frame):
 	relaxed_count = 0
 	for c in contours:
 		area = cv2.contourArea(c)
-		if area <= min_area or area > max_area:
-			if area > min_area and area <= max_area:
+		area_ratio = area / float(frame_area) if frame_area else 0.0
+		is_far = area_ratio <= FAR_AREA_RATIO_THRESHOLD
+		per_contour_min_area = far_min_area if is_far else near_min_area
+		per_contour_solidity = SOLIDITY_MIN_FAR if is_far else SOLIDITY_MIN
+		per_contour_extent = EXTENT_MIN_FAR if is_far else EXTENT_MIN
+		if area <= per_contour_min_area or area > max_area:
+			if area > per_contour_min_area and area <= max_area:
 				if fallback is None or area > fallback[0]:
 					fallback = (area, c)
 			continue
@@ -374,7 +388,7 @@ def annotate_shape(frame):
 		if w <= 0 or h <= 0:
 			continue
 		extent = area / float(w * h)
-		if solidity < SOLIDITY_MIN or extent < EXTENT_MIN:
+		if solidity < per_contour_solidity or extent < per_contour_extent:
 			continue
 
 		valid_count += 1
@@ -412,7 +426,10 @@ def annotate_shape(frame):
 	h = min(working.shape[0] - y, h + SHAPE_AREA_PADDING * 2)
 	cv2.rectangle(working, (x, y), (x + w, y + h), (0, 255, 0), 2)
 	if using_strict_shape:
-		shape_label = classify_shape(largest)
+		shape_area_ratio = area / float(frame_area) if frame_area else 0.0
+		score_threshold = SHAPE_SCORE_THRESHOLD_FAR if shape_area_ratio <= FAR_AREA_RATIO_THRESHOLD else SHAPE_SCORE_THRESHOLD
+		shape_label = classify_shape(largest, score_threshold=score_threshold)
+		DEBUG_INFO.append(f"score threshold={score_threshold:.2f}")
 	else:
 		shape_label = "Unknown"
 	DEBUG_INFO.append(f"label={shape_label}")
@@ -429,7 +446,7 @@ def annotate_shape(frame):
 	return working
 
 
-def classify_shape(contour):
+def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 	best_label = "Unknown"
 	best_score = 1e9
 	second_score = 1e9
@@ -477,7 +494,7 @@ def classify_shape(contour):
 					second_label_raw = label_best_score
 			DEBUG_INFO.append(f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} combined={combined_score:.3f}")
 
-	if best_score > SHAPE_SCORE_THRESHOLD:
+	if best_score > score_threshold:
 		return "Unknown"
 
 	# L vs Skew tie-break uses concavity count from hull defects.
