@@ -51,7 +51,8 @@ FG_DECAY = 0.82
 FG_INIT_FRAMES = 10
 DEFECT_DEPTH_THRESHOLD = 4.0
 DEFECT_PENALTY = 0.09
-DEFECT_MEAN_PENALTY = 0.18
+DEFECT_MEAN_PENALTY = 0.03
+PROFILE_PENALTY_MAX = 0.35
 DEBUG_INFO = []
 DEBUG_TICK = 0
 SHOW_DEBUG_TEXT = False
@@ -567,6 +568,7 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 				profile_penalty += abs(c_count - t_count) * DEFECT_PENALTY
 				profile_penalty += abs(c_mean - t_mean) * DEFECT_MEAN_PENALTY
 				profile_penalty += abs(c_max - t_max) * DEFECT_MEAN_PENALTY
+			profile_penalty = min(profile_penalty, PROFILE_PENALTY_MAX)
 			score = match_score + profile_penalty
 			label_best_score = min(label_best_score, score)
 		label_name = label
@@ -587,7 +589,7 @@ def classify_shape(contour, score_threshold=SHAPE_SCORE_THRESHOLD):
 					second_label_raw = label_best_score
 			DEBUG_INFO.append(f"classify:{label_name} best={label_best_score:.3f} geom={geometry_delta:.3f} combined={combined_score:.3f}")
 
-	if best_score > score_threshold:
+	if best_score > score_threshold * 2:
 		return "Unknown"
 
 		# L vs Skew tie-break uses concavity profile from hull defects.
