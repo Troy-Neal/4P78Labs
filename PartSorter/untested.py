@@ -336,13 +336,13 @@ def annotate_shape(frame):
 	DEBUG_INFO.append(f"fg learning={fg_learning_rate}")
 	DEBUG_INFO.append(f"moving raw={moving_count}")
 
-	raw_float = moving_raw.astype(np.float32) / 255.0
+		raw_float = moving_raw.astype(np.float32) / 255.0
 
-	if FG_STABLE_MASK is None:
-		FG_STABLE_MASK = raw_float.copy()
-	else:
-		FG_STABLE_MASK = FG_STABLE_MASK * FG_DECAY
-		FG_STABLE_MASK = cv2.addWeighted(raw_float, FG_ALPHA, FG_STABLE_MASK, 1.0 - FG_ALPHA, 0.0)
+		if FG_STABLE_MASK is None:
+			FG_STABLE_MASK = raw_float.copy()
+		else:
+			FG_STABLE_MASK = FG_STABLE_MASK * FG_DECAY
+			FG_STABLE_MASK = cv2.addWeighted(raw_float, FG_ALPHA, FG_STABLE_MASK, 1.0 - FG_ALPHA, 0.0)
 		_, stable_move = cv2.threshold(FG_STABLE_MASK, 0.50, 1.0, cv2.THRESH_BINARY)
 		moving_mask = (stable_move * 255).astype(np.uint8)
 		DEBUG_INFO.append(f"moving stable={int(np.count_nonzero(moving_mask))}")
@@ -363,7 +363,7 @@ def annotate_shape(frame):
 		if background_calibrated and not low_motion:
 			foreground_gate = cv2.bitwise_or(foreground_gate, bg_mask)
 		shape_mask = cv2.bitwise_and(shape_mask, cv2.morphologyEx(foreground_gate, cv2.MORPH_DILATE, np.ones((7, 7), np.uint8)))
-	DEBUG_INFO.append(f"foreground_gate={int(np.count_nonzero(foreground_gate))}")
+		DEBUG_INFO.append(f"foreground_gate={int(np.count_nonzero(foreground_gate))}")
 
 	shape_mask = cv2.morphologyEx(shape_mask, cv2.MORPH_OPEN, kernel)
 	shape_mask = cv2.morphologyEx(shape_mask, cv2.MORPH_CLOSE, kernel)
