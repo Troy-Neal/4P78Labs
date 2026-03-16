@@ -73,3 +73,106 @@
 [2026-03-11 13:30:20] frame=640x480 | calibrated=True | bg_model: yes | fg learning=0.0 | moving raw=10510 | moving stable=10492 | bg_mask used=18599 | bg_gate=23763 | foreground_gate=18599 | mask pixels=2261 | target area range=40..92160 | contours mask=1 | contours valid=1 | contours relaxed=1 | using filtered contour | strict shape accepted area=7944 | chosen area=7944 | classify:T best=0.112 geom=0.000 combined=0.112 | classify:Skew best=0.026 geom=0.000 combined=0.026 | score threshold=0.45 | label=Skew (0.026) / Gray
 [2026-03-11 13:30:26] frame=640x480 | calibrated=True | bg_model: yes | fg learning=0.0 | moving raw=10549 | moving stable=10527 | bg_mask used=18632 | bg_gate=23797 | foreground_gate=18632 | mask pixels=2262 | target area range=40..92160 | contours mask=1 | contours valid=1 | contours relaxed=1 | using filtered contour | strict shape accepted area=7957 | chosen area=7957 | classify:T best=0.114 geom=0.000 combined=0.114 | classify:Skew best=0.020 geom=0.000 combined=0.020 | score threshold=0.45 | label=Skew (0.020) / Gray
 [2026-03-11 13:30:32] frame=640x480 | calibrated=True | bg_model: yes | fg learning=0.0 | moving raw=8322 | moving stable=8073 | bg_mask used=14374 | bg_gate=19129 | foreground_gate=14374 | mask pixels=0 | target area range=40..92160 | contours mask=0 | fallback: edges | contours edges=0 | fallback: loose | contours loose=1 | contours valid=0 | contours relaxed=0 | using largest contour | chosen area=306081 | classify:T best=0.246 geom=0.180 combined=0.426 | classify:Skew best=0.252 geom=0.180 combined=0.432 | classify:L best=0.253 geom=0.090 combined=0.343 | score threshold=0.56 | label=L (0.343) / Green
+[2026-03-16 09:55:41] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.187 geom=0.180 sides=0.070 combined=0.437 | classify:Skew best=0.209 geom=0.180 sides=0.070 combined=0.459 | classify:L best=0.185 geom=0.090 sides=0.000 combined=0.275 | label=L (0.275) / White
+[2026-03-16 09:55:46] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.149 geom=0.000 sides=0.000 combined=0.149 | classify:Skew best=0.055 geom=0.000 sides=0.000 combined=0.055 | classify:L best=0.239 geom=0.090 sides=0.070 combined=0.399 | label=Skew (0.055) / Green
+[2026-03-16 09:55:52] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.152 geom=0.000 sides=0.000 combined=0.152 | classify:Skew best=0.053 geom=0.000 sides=0.000 combined=0.053 | classify:L best=0.237 geom=0.090 sides=0.070 combined=0.397 | label=Skew (0.053) / Green
+[2026-03-16 09:55:58] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.149 geom=0.000 sides=0.000 combined=0.149 | classify:Skew best=0.055 geom=0.000 sides=0.000 combined=0.055 | classify:L best=0.239 geom=0.090 sides=0.070 combined=0.399 | label=Skew (0.055) / Green
+[2026-03-16 09:56:04] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 09:56:10] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.315 geom=0.090 sides=0.070 combined=0.475 | classify:Skew best=0.339 geom=0.090 sides=0.070 combined=0.499 | classify:L best=0.320 geom=0.000 sides=0.000 combined=0.320 | label=Skew (0.320) / Gray
+[2026-03-16 09:56:16] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.147 geom=0.000 sides=0.035 combined=0.182 | classify:Skew best=0.075 geom=0.000 sides=0.035 combined=0.110 | classify:L best=0.319 geom=0.090 sides=0.105 combined=0.514 | label=Skew (0.110) / Green
+[2026-03-16 09:56:21] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.139 geom=0.000 sides=0.035 combined=0.174 | classify:Skew best=0.060 geom=0.000 sides=0.035 combined=0.095 | classify:L best=0.314 geom=0.090 sides=0.105 combined=0.509 | label=Skew (0.095) / Green
+[2026-03-16 09:56:41] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.161 geom=0.000 sides=0.000 combined=0.161 | classify:Skew best=0.044 geom=0.000 sides=0.000 combined=0.044 | classify:L best=0.228 geom=0.090 sides=0.070 combined=0.388 | label=Skew (0.044) / Green
+[2026-03-16 09:57:47] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.171 geom=0.000 sides=0.000 combined=0.171 | classify:Skew best=0.034 geom=0.000 sides=0.000 combined=0.034 | classify:L best=0.218 geom=0.090 sides=0.070 combined=0.378 | label=Skew (0.034) / Green
+[2026-03-16 10:31:37] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.191 geom=0.180 sides=0.035 combined=0.406 | classify:Skew best=0.224 geom=0.180 sides=0.035 combined=0.439 | classify:L best=0.210 geom=0.090 sides=0.035 combined=0.335 | label=L (0.335) / White
+[2026-03-16 10:31:55] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.201 geom=0.000 sides=0.000 combined=0.201 | classify:Skew best=0.058 geom=0.000 sides=0.000 combined=0.058 | classify:L best=0.211 geom=0.090 sides=0.070 combined=0.371 | label=Skew (0.058) / Green
+[2026-03-16 10:32:01] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.201 geom=0.000 sides=0.000 combined=0.201 | classify:Skew best=0.058 geom=0.000 sides=0.000 combined=0.058 | classify:L best=0.210 geom=0.090 sides=0.070 combined=0.370 | label=Skew (0.058) / Green
+[2026-03-16 10:32:06] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.201 geom=0.000 sides=0.000 combined=0.201 | classify:Skew best=0.058 geom=0.000 sides=0.000 combined=0.058 | classify:L best=0.210 geom=0.090 sides=0.070 combined=0.370 | label=Skew (0.058) / Green
+[2026-03-16 10:32:12] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.200 geom=0.000 sides=0.000 combined=0.200 | classify:Skew best=0.054 geom=0.000 sides=0.000 combined=0.054 | classify:L best=0.207 geom=0.090 sides=0.070 combined=0.367 | label=Skew (0.054) / Green
+[2026-03-16 10:32:18] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.201 geom=0.000 sides=0.000 combined=0.201 | classify:Skew best=0.058 geom=0.000 sides=0.000 combined=0.058 | classify:L best=0.211 geom=0.090 sides=0.070 combined=0.371 | label=Skew (0.058) / Green
+[2026-03-16 10:32:24] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.199 geom=0.000 sides=0.000 combined=0.199 | classify:Skew best=0.053 geom=0.000 sides=0.000 combined=0.053 | classify:L best=0.207 geom=0.090 sides=0.070 combined=0.367 | label=Skew (0.053) / Green
+[2026-03-16 10:32:29] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.199 geom=0.000 sides=0.000 combined=0.199 | classify:Skew best=0.053 geom=0.000 sides=0.000 combined=0.053 | classify:L best=0.207 geom=0.090 sides=0.070 combined=0.367 | label=Skew (0.053) / Green
+[2026-03-16 10:32:35] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.201 geom=0.000 sides=0.000 combined=0.201 | classify:Skew best=0.058 geom=0.000 sides=0.000 combined=0.058 | classify:L best=0.211 geom=0.090 sides=0.070 combined=0.371 | label=Skew (0.058) / Green
+[2026-03-16 10:33:00] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.188 geom=0.180 sides=0.105 combined=0.473 | classify:Skew best=0.213 geom=0.180 sides=0.105 combined=0.498 | classify:L best=0.233 geom=0.090 sides=0.035 combined=0.358 | label=L (0.358) / White
+[2026-03-16 10:33:43] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=3
+[2026-03-16 10:33:58] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.172 geom=0.000 sides=0.000 combined=0.172 | classify:Skew best=0.049 geom=0.000 sides=0.000 combined=0.049 | classify:L best=0.186 geom=0.090 sides=0.070 combined=0.346 | label=Skew (0.049) / Green
+[2026-03-16 10:34:04] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.178 geom=0.000 sides=0.000 combined=0.178 | classify:Skew best=0.048 geom=0.000 sides=0.000 combined=0.048 | classify:L best=0.187 geom=0.090 sides=0.070 combined=0.347 | label=Skew (0.048) / Green
+[2026-03-16 10:35:31] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.180 geom=0.000 sides=0.000 combined=0.180 | classify:Skew best=0.049 geom=0.000 sides=0.000 combined=0.049 | classify:L best=0.193 geom=0.090 sides=0.070 combined=0.353 | label=Skew (0.049) / Green
+[2026-03-16 10:36:59] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.181 geom=0.000 sides=0.000 combined=0.181 | classify:Skew best=0.050 geom=0.000 sides=0.000 combined=0.050 | classify:L best=0.193 geom=0.090 sides=0.070 combined=0.353 | label=Skew (0.050) / Green
+[2026-03-16 10:37:05] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.185 geom=0.000 sides=0.000 combined=0.185 | classify:Skew best=0.048 geom=0.000 sides=0.000 combined=0.048 | classify:L best=0.194 geom=0.090 sides=0.070 combined=0.354 | label=Skew (0.048) / Green
+[2026-03-16 10:38:02] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.180 geom=0.000 sides=0.000 combined=0.180 | classify:Skew best=0.049 geom=0.000 sides=0.000 combined=0.049 | classify:L best=0.193 geom=0.090 sides=0.070 combined=0.353 | label=Skew (0.049) / Green
+[2026-03-16 10:38:08] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.184 geom=0.000 sides=0.000 combined=0.184 | classify:Skew best=0.053 geom=0.000 sides=0.000 combined=0.053 | classify:L best=0.196 geom=0.090 sides=0.070 combined=0.356 | label=Skew (0.053) / Green
+[2026-03-16 10:38:13] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.182 geom=0.000 sides=0.000 combined=0.182 | classify:Skew best=0.045 geom=0.000 sides=0.000 combined=0.045 | classify:L best=0.192 geom=0.090 sides=0.070 combined=0.352 | label=Skew (0.045) / Green
+[2026-03-16 10:40:50] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.194 geom=0.180 sides=0.035 combined=0.409 | classify:Skew best=0.224 geom=0.180 sides=0.035 combined=0.439 | classify:L best=0.207 geom=0.090 sides=0.035 combined=0.332 | label=L (0.332) / White
+[2026-03-16 10:40:56] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.194 geom=0.180 sides=0.035 combined=0.409 | classify:Skew best=0.224 geom=0.180 sides=0.035 combined=0.439 | classify:L best=0.207 geom=0.090 sides=0.035 combined=0.332 | label=L (0.332) / White
+[2026-03-16 10:41:01] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:07] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:13] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:18] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:24] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:29] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:35] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:40] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 10:41:55] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.179 geom=0.090 sides=0.000 combined=0.269 | classify:Skew best=0.199 geom=0.090 sides=0.000 combined=0.289 | classify:L best=0.168 geom=0.000 sides=0.070 combined=0.238 | label=L (0.238) / White
+[2026-03-16 11:00:20] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.197 geom=0.180 sides=0.070 combined=0.447 | classify:Skew best=0.231 geom=0.180 sides=0.070 combined=0.481 | classify:L best=0.229 geom=0.090 sides=0.000 combined=0.319 | label=L (0.319) / White
+[2026-03-16 11:00:26] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.196 geom=0.180 sides=0.070 combined=0.446 | classify:Skew best=0.230 geom=0.180 sides=0.070 combined=0.480 | classify:L best=0.228 geom=0.090 sides=0.000 combined=0.318 | label=L (0.318) / White
+[2026-03-16 11:00:32] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.197 geom=0.180 sides=0.070 combined=0.447 | classify:Skew best=0.231 geom=0.180 sides=0.070 combined=0.481 | classify:L best=0.229 geom=0.090 sides=0.000 combined=0.319 | label=L (0.319) / White
+[2026-03-16 11:01:35] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:01:41] frame=640x480 | calibrated=False | bg_model: yes | no valid contour candidates
+[2026-03-16 11:01:53] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=3
+[2026-03-16 11:01:59] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:04] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:10] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:15] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:21] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:26] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:32] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:37] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:43] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:02:48] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:03:07] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:03:13] frame=640x480 | calibrated=False | bg_model: yes | no valid contour candidates
+[2026-03-16 11:03:19] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:05:37] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:05:43] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:06:23] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:06:32] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:06:38] frame=640x480 | calibrated=False | bg_model: no | classify:T best=0.130 geom=0.000 sides=0.000 combined=0.130 | classify:Skew best=0.186 geom=0.000 sides=0.000 combined=0.186 | classify:L best=0.216 geom=0.090 sides=0.070 combined=0.376 | label=T (0.130) / Red
+[2026-03-16 11:06:48] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:06:57] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:07:07] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates | holding previous contour frame=2
+[2026-03-16 11:07:27] frame=640x480 | calibrated=True | bg_model: yes | classify:T best=0.053 geom=0.000 sides=0.000 combined=0.053 | classify:Skew best=0.181 geom=0.000 sides=0.000 combined=0.181 | classify:L best=0.262 geom=0.090 sides=0.070 combined=0.422 | label=Skew (0.053) / Green
+[2026-03-16 11:07:56] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=1
+[2026-03-16 11:08:10] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=1
+[2026-03-16 11:08:20] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:25] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:31] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:36] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:42] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:51] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:08:57] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:11] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=1
+[2026-03-16 11:09:16] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:22] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:27] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:32] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:42] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:48] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:09:53] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:10:31] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:10:42] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:11:00] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:11:25] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates | holding previous contour frame=3
+[2026-03-16 11:11:35] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:11:45] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:11:54] frame=640x480 | calibrated=False | bg_model: yes | no valid contour candidates | holding previous contour frame=3
+[2026-03-16 11:12:04] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:12:09] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:12:29] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates | holding previous contour frame=3
+[2026-03-16 11:12:47] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:12:57] frame=640x480 | calibrated=True | bg_model: yes | no valid contour candidates
+[2026-03-16 11:13:03] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:13:08] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:13:13] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:13:19] frame=640x480 | calibrated=False | bg_model: no
+[2026-03-16 11:13:24] frame=640x480 | calibrated=False | bg_model: no | no valid contour candidates
+[2026-03-16 11:13:34] frame=640x480 | calibrated=False | bg_model: no | classify:T best=0.239 geom=0.000 sides=0.070 combined=0.309 | classify:Skew best=0.284 geom=0.000 sides=0.070 combined=0.354 | classify:L best=0.213 geom=0.090 sides=0.140 combined=0.443 | label=T (0.309) / Unknown

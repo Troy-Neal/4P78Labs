@@ -3,6 +3,13 @@ import os
 import time
 import tkinter as tk
 
+import sys
+import nxt
+import nxt.locator
+import nxt.motor
+import nxt.sensor
+import nxt.sensor.generic
+
 import cv2
 
 from detector import PartSorterDetector
@@ -16,6 +23,82 @@ DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detec
 
 
 class ScannerApp:
+
+
+    def bumper(sensor):
+        def bumpy():
+            while not sensor.get_sample():
+                pass
+            return True
+        return bumpy
+
+    def prep():
+        global brick
+        global motor_shoulder
+        global motor_elbow
+        global touch_shoulder
+        global touch_elbow
+        try:
+            brick = nxt.locator.find()
+        except nxt.locator.BrickNotFoundError:
+            print("---\n<<< Did you remember to turn the brick on? >>>\n---")
+            if sys.flags.interactive:
+                return
+            else:
+                sys.exit(0)
+        motor_shoulder = brick.get_motor(nxt.motor.Port.A)
+        motor_elbow = brick.get_motor(nxt.motor.Port.B)
+        touch_shoulder = brick.get_sensor(nxt.sensor.Port.S1, nxt.sensor.generic.Touch)
+        touch_elbow = brick.get_sensor(nxt.sensor.Port.S2, nxt.sensor.generic.Touch)
+
+    def cleanup():
+        motor_shoulder.idle()
+        motor_elbow.idle()
+        brick.close()
+
+    def home():
+        #try:
+            print("home")
+            motor_shoulder.turn(-15, 360, stop_turn = ScannerApp.bumper(touch_shoulder))
+            motor_elbow.turn(15, 360, stop_turn = ScannerApp.bumper(touch_elbow))
+            #time.sleep(1)
+        #except:
+        #    return
+
+    def push_left():
+        #try:
+            print("go_left")
+            motor_shoulder.turn(30, 150) 
+            motor_elbow.turn(-30, 150)
+            #time.sleep(1)
+       # except:
+        #    ScannerApp.home()
+        #    return
+
+    def push_right():
+        #try:
+            print("go_right")
+            motor_elbow.turn(-30, 250)
+            motor_shoulder.turn(30, 100)
+            motor_elbow.turn(5, 90)
+            motor_shoulder.turn(-30, 90) 
+            #time.sleep(1)
+        #except:
+         #   ScannerApp.home()
+         #   return
+
+    def push_off():
+        #try:
+            print("go_out")
+            motor_elbow.turn(-30, 250)
+            motor_shoulder.turn(30, 110) 
+            motor_elbow.turn(30, 40)
+            motor_shoulder.turn(-70, 50)
+            #time.sleep(1)
+        #except:
+        #    ScannerApp.home()
+         #   return
+
     def __init__(self) -> None:
         self.camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.detector = PartSorterDetector()
@@ -44,7 +127,10 @@ class ScannerApp:
         self.min_size_var = tk.IntVar(value=int(self.detector.min_shape_area))
         self.min_size_label = tk.Label(controls, text=f"Min object size: {self.min_size_var.get()}")
         self.min_size_label.pack(side=tk.LEFT, padx=(16, 6))
-        self.min_size_scale = tk.Scale(
+
+        self.on_min_size_change(1200)
+
+        self.min_size_var = tk.Scale(
             controls,
             from_=40,
             to=1200,
@@ -54,9 +140,10 @@ class ScannerApp:
             command=self.on_min_size_change,
             length=220,
         )
-        self.min_size_scale.pack(side=tk.LEFT, padx=4)
+        self.min_size_var.pack(side=tk.LEFT, padx=4)
 
         self.window.protocol("WM_DELETE_WINDOW", self.stop_app)
+
 
     def run(self) -> None:
         if self.camera.isOpened():
@@ -65,6 +152,8 @@ class ScannerApp:
         else:
             self.running = False
             self._log_debug("Cannot open camera")
+        ScannerApp.prep()
+        ScannerApp.home()
         self.window.mainloop()
 
     def update_feed(self) -> None:
@@ -72,7 +161,6 @@ class ScannerApp:
             return
         if self.camera is None or not self.camera.isOpened():
             return
-
         ret, frame = self.camera.read()
         if not ret:
             self._log_debug("Can't receive frame. Exiting...")
@@ -80,8 +168,7 @@ class ScannerApp:
             return
 
         display_frame, debug_mask, debug_lines, action = self.detector.process(frame)
-        if action is not None:
-            print(action)
+
 
         if self.show_debug_text:
             for idx, msg in enumerate(debug_lines[:DEBUG_PRINT_LINES]):
@@ -114,7 +201,17 @@ class ScannerApp:
 
         self._set_tk_image(self.camera_label, display_frame)
         self._set_tk_image(self.debug_label, debug_mask if debug_mask is not None else display_frame)
-
+        
+        if action is not None:
+            print(action)
+            match action:
+                case "left":
+                    ScannerApp.push_left()
+                case "right":
+                    ScannerApp.push_right()
+                case "outward":
+                    ScannerApp.push_off()
+            ScannerApp.home()
         if self.app_open:
             self.window.after(PROCESS_INTERVAL_MS, self.update_feed)
 
@@ -137,6 +234,7 @@ class ScannerApp:
         self.running = False
         self.stop_scanning()
         self.window.destroy()
+        ScannerApp.cleanup()
 
     def toggle_debug_overlay(self) -> None:
         self.show_debug_text = not self.show_debug_text

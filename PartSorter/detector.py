@@ -8,7 +8,7 @@ import numpy as np
 from shape_classifier import ShapeClassifier, classify_color, clean_shape_name, direction, extract_score
 
 
-MIN_SHAPE_AREA = 120
+MIN_SHAPE_AREA = 1200
 MIN_SHAPE_AREA_FAR = 40
 MIN_SHAPE_AREA_RATIO_NEAR = 0.0002
 MIN_SHAPE_AREA_RATIO_FAR = 0.00008
@@ -111,7 +111,7 @@ class PartSorterDetector:
         if not contours:
             return self._missing(working, debug_mask, debug)
 
-        contour = self._pick_candidate(contours, frame_area, near_min_area, far_min_area)
+        contour = self._pick_candidate(contours, frame_area, self.min_shape_area, self.min_shape_area_far)
         if contour is None:
             debug.append("no valid contour candidates")
             return self._missing(working, debug_mask, debug)

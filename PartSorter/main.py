@@ -17,7 +17,7 @@ if not cap.isOpened():
 
 
 
-
+"""
 while True:
 	# Read a frame
 	ret, frame = cap.read()
@@ -32,6 +32,7 @@ while True:
 	# Exit on pressing 'q'
 	if cv2.waitKey(1) == ord('q'):
 		break
+"""
 
 def bumper(sensor):
 	def bumpy():
