@@ -20,6 +20,8 @@ PEN_UP_Z = 5
 PEN_DOWN_Z = 0
 DEFAULT_CURVE_SEGMENTS = 8
 DEFAULT_MIN_MOVE = 1.0
+DEFAULT_BED_WIDTH = 200.0
+DEFAULT_BED_HEIGHT = 200.0
 
 COMMAND_RE = re.compile(r"[MmLlHhVvCcZz]")
 NUMBER_RE = re.compile(r"[-+]?(?:\d+\.\d+|\d+\.?|\.\d+)(?:[eE][-+]?\d+)?")
@@ -145,21 +147,74 @@ def simplify_points(points, min_move):
     return simplified
 
 
-def add_outline_gcode(gcode, points, min_move):
+def add_outline_gcode(gcode, points, min_move, current_position):
     points = simplify_points(points, min_move)
     if len(points) < 2:
         return
 
     start_x, start_y = points[0]
-    gcode.append(g0(start_x, start_y))
-    gcode.append(f"G1 Z{PEN_DOWN_Z}")
-    first_x, first_y = points[1]
-    gcode.append(g1(first_x, first_y))
+    gcode.append(g0(start_x - current_position[0], start_y - current_position[1]))
+    gcode.append(f"G1 Z{PEN_DOWN_Z - PEN_UP_Z}")
 
-    for x, y in points[2:]:
-        gcode.append(f"G1 X{x:.3f} Y{y:.3f}")
+    previous_x, previous_y = start_x, start_y
+    for x, y in points[1:]:
+        gcode.append(g1(x - previous_x, y - previous_y))
+        previous_x, previous_y = x, y
 
-    gcode.append(f"G0 Z{PEN_UP_Z}")
+    gcode.append(f"G0 Z{PEN_UP_Z - PEN_DOWN_Z}")
+    current_position[0] = previous_x
+    current_position[1] = previous_y
+
+
+def collect_transformed_subpaths(elem, parent_matrix, subpaths, curve_segments):
+    element_matrix = multiply_matrices(parent_matrix, parse_transform(elem.get("transform")))
+    raw_subpaths = element_to_subpaths(elem, curve_segments)
+
+    for subpath in raw_subpaths:
+        if not subpath:
+            continue
+        transformed_points = [
+            apply_transform(point, element_matrix, scale=1.0) for point in subpath
+        ]
+        subpaths.append(transformed_points)
+
+    for child in elem:
+        collect_transformed_subpaths(child, element_matrix, subpaths, curve_segments)
+
+
+def compute_bounds(subpaths):
+    all_points = [point for subpath in subpaths for point in subpath]
+    if not all_points:
+        return None
+
+    min_x = min(point[0] for point in all_points)
+    max_x = max(point[0] for point in all_points)
+    min_y = min(point[1] for point in all_points)
+    max_y = max(point[1] for point in all_points)
+    return min_x, min_y, max_x, max_y
+
+
+def fit_subpaths_to_bed(subpaths, bed_width, bed_height, extra_scale):
+    bounds = compute_bounds(subpaths)
+    if bounds is None:
+        return []
+
+    min_x, min_y, max_x, max_y = bounds
+    width = max_x - min_x
+    height = max_y - min_y
+
+    if width <= 0 or height <= 0:
+        scale = extra_scale
+    else:
+        scale = min(bed_width / width, bed_height / height) * extra_scale
+
+    fitted_subpaths = []
+    for subpath in subpaths:
+        fitted_subpaths.append([
+            ((x - min_x) * scale, (y - min_y) * scale) for x, y in subpath
+        ])
+
+    return fitted_subpaths
 
 
 def rect_to_points(elem):
@@ -357,37 +412,41 @@ def element_to_subpaths(elem, curve_segments):
     return []
 
 
-def walk_svg(elem, parent_matrix, scale, curve_segments, min_move, gcode):
-    element_matrix = multiply_matrices(parent_matrix, parse_transform(elem.get("transform")))
-    subpaths = element_to_subpaths(elem, curve_segments)
-
-    for subpath in subpaths:
-        transformed_points = [
-            apply_transform(point, element_matrix, scale) for point in subpath
-        ]
-        add_outline_gcode(gcode, transformed_points, min_move)
-
-    for child in elem:
-        walk_svg(child, element_matrix, scale, curve_segments, min_move, gcode)
-
-
 def svg_to_gcode(
     svg_file,
     gcode_file,
     scale=1.0,
     curve_segments=DEFAULT_CURVE_SEGMENTS,
     min_move=DEFAULT_MIN_MOVE,
+    bed_width=DEFAULT_BED_WIDTH,
+    bed_height=DEFAULT_BED_HEIGHT,
 ):
     tree = ET.parse(svg_file)
     root = tree.getroot()
 
     gcode = [
         "G21",
-        "G90",
+        "G91",
         f"G0 Z{PEN_UP_Z}",
     ]
 
-    walk_svg(root, identity_matrix(), scale, curve_segments, min_move, gcode)
+    transformed_subpaths = []
+    collect_transformed_subpaths(
+        root,
+        identity_matrix(),
+        transformed_subpaths,
+        curve_segments,
+    )
+    fitted_subpaths = fit_subpaths_to_bed(
+        transformed_subpaths,
+        bed_width,
+        bed_height,
+        scale,
+    )
+
+    current_position = [0.0, 0.0]
+    for subpath in fitted_subpaths:
+        add_outline_gcode(gcode, subpath, min_move, current_position)
 
     gcode.append("M2")
 
@@ -409,7 +468,7 @@ def main():
         "--scale",
         type=float,
         default=1.0,
-        help="Scale factor applied after SVG transforms",
+        help="Extra scale factor applied after fitting the drawing to the bed",
     )
     parser.add_argument(
         "--curve-segments",
@@ -423,6 +482,18 @@ def main():
         default=DEFAULT_MIN_MOVE,
         help="Skip intermediate XY points that are closer than this distance",
     )
+    parser.add_argument(
+        "--bed-width",
+        type=float,
+        default=DEFAULT_BED_WIDTH,
+        help="Usable bed width in millimeters",
+    )
+    parser.add_argument(
+        "--bed-height",
+        type=float,
+        default=DEFAULT_BED_HEIGHT,
+        help="Usable bed height in millimeters",
+    )
 
     args = parser.parse_args()
     output_file = args.gcode_file
@@ -435,6 +506,8 @@ def main():
         scale=args.scale,
         curve_segments=max(1, args.curve_segments),
         min_move=max(0.0, args.min_move),
+        bed_width=max(1.0, args.bed_width),
+        bed_height=max(1.0, args.bed_height),
     )
     print(f"G-code written to {output_file}")
 
