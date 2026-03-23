@@ -18,7 +18,6 @@ import xml.etree.ElementTree as ET
 
 PEN_UP_Z = 5
 PEN_DOWN_Z = 0
-PEN_Z_FEED_RATE = 300
 DEFAULT_CURVE_SEGMENTS = 8
 DEFAULT_MIN_MOVE = 1.0
 
@@ -122,8 +121,8 @@ def g0(x, y):
     return f"G0 X{x:.3f} Y{y:.3f}"
 
 
-def g1(x, y, feed_rate):
-    return f"G1 X{x:.3f} Y{y:.3f} F{feed_rate}"
+def g1(x, y):
+    return f"G1 X{x:.3f} Y{y:.3f}"
 
 
 def distance(point_a, point_b):
@@ -146,16 +145,16 @@ def simplify_points(points, min_move):
     return simplified
 
 
-def add_outline_gcode(gcode, points, feed_rate, min_move):
+def add_outline_gcode(gcode, points, min_move):
     points = simplify_points(points, min_move)
     if len(points) < 2:
         return
 
     start_x, start_y = points[0]
     gcode.append(g0(start_x, start_y))
-    gcode.append(f"G1 Z{PEN_DOWN_Z} F{PEN_Z_FEED_RATE}")
+    gcode.append(f"G1 Z{PEN_DOWN_Z}")
     first_x, first_y = points[1]
-    gcode.append(g1(first_x, first_y, feed_rate))
+    gcode.append(g1(first_x, first_y))
 
     for x, y in points[2:]:
         gcode.append(f"G1 X{x:.3f} Y{y:.3f}")
@@ -358,7 +357,7 @@ def element_to_subpaths(elem, curve_segments):
     return []
 
 
-def walk_svg(elem, parent_matrix, scale, feed_rate, curve_segments, min_move, gcode):
+def walk_svg(elem, parent_matrix, scale, curve_segments, min_move, gcode):
     element_matrix = multiply_matrices(parent_matrix, parse_transform(elem.get("transform")))
     subpaths = element_to_subpaths(elem, curve_segments)
 
@@ -366,17 +365,16 @@ def walk_svg(elem, parent_matrix, scale, feed_rate, curve_segments, min_move, gc
         transformed_points = [
             apply_transform(point, element_matrix, scale) for point in subpath
         ]
-        add_outline_gcode(gcode, transformed_points, feed_rate, min_move)
+        add_outline_gcode(gcode, transformed_points, min_move)
 
     for child in elem:
-        walk_svg(child, element_matrix, scale, feed_rate, curve_segments, min_move, gcode)
+        walk_svg(child, element_matrix, scale, curve_segments, min_move, gcode)
 
 
 def svg_to_gcode(
     svg_file,
     gcode_file,
     scale=1.0,
-    feed_rate=1000,
     curve_segments=DEFAULT_CURVE_SEGMENTS,
     min_move=DEFAULT_MIN_MOVE,
 ):
@@ -389,7 +387,7 @@ def svg_to_gcode(
         f"G0 Z{PEN_UP_Z}",
     ]
 
-    walk_svg(root, identity_matrix(), scale, feed_rate, curve_segments, min_move, gcode)
+    walk_svg(root, identity_matrix(), scale, curve_segments, min_move, gcode)
 
     gcode.append("M2")
 
@@ -414,12 +412,6 @@ def main():
         help="Scale factor applied after SVG transforms",
     )
     parser.add_argument(
-        "--feed-rate",
-        type=int,
-        default=1000,
-        help="Feed rate used for XY drawing moves",
-    )
-    parser.add_argument(
         "--curve-segments",
         type=int,
         default=DEFAULT_CURVE_SEGMENTS,
@@ -441,7 +433,6 @@ def main():
         args.svg_file,
         output_file,
         scale=args.scale,
-        feed_rate=args.feed_rate,
         curve_segments=max(1, args.curve_segments),
         min_move=max(0.0, args.min_move),
     )
