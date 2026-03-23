@@ -4,6 +4,7 @@ This script only traces shape boundaries. It does not generate any infill.
 """
 
 import argparse
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
@@ -135,7 +136,11 @@ def main():
         description="Convert simple SVG outlines into pen-plotter G-code without external libraries."
     )
     parser.add_argument("svg_file", help="Path to the input SVG file")
-    parser.add_argument("gcode_file", help="Path to the output G-code file")
+    parser.add_argument(
+        "gcode_file",
+        nargs="?",
+        help="Path to the output G-code file. Defaults to the SVG name with a .gcode extension.",
+    )
     parser.add_argument(
         "--scale",
         type=float,
@@ -150,8 +155,12 @@ def main():
     )
 
     args = parser.parse_args()
-    svg_to_gcode(args.svg_file, args.gcode_file, args.scale, args.feed_rate)
-    print(f"G-code written to {args.gcode_file}")
+    output_file = args.gcode_file
+    if output_file is None:
+        output_file = str(Path(args.svg_file).with_suffix(".gcode"))
+
+    svg_to_gcode(args.svg_file, output_file, args.scale, args.feed_rate)
+    print(f"G-code written to {output_file}")
 
 
 if __name__ == "__main__":
