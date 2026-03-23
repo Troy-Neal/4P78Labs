@@ -3,7 +3,7 @@ import serial
 import time
 
 def main():
-    port = 'COM3' #Set this to your actual COM port!
+    port = 'COM4' #Set this to your actual COM port!
     baudrate = 115200  # Common baudrate for 3D printers, adjust if needed
 
     try:
@@ -16,12 +16,20 @@ def main():
 
         # Send GCode to raise the tip by 10mm
         ser.write(b'G91\n')  # Set to relative positioning
+
+        ser.write(b'G0 Z10\n')
+        ser.write(b'G28\n')
+
+
         ser.write(b'G0 Z10\n')  # Move up by 10mm
         time.sleep(1)
 
         # Send GCode to move along the positive X axis by 10mm
-        ser.write(b'G0 X10\n')  # Move 10mm in X direction
+        #ser.write(b'G0 X10\n')  # Move 10mm in X direction
+        ser.write(b'G0 X100 Y100\n')
         time.sleep(1)
+
+        ser.write(b'G02 X60 Y0 I30 J00\n')
 
         # Send GCode to lower the tip by 10mm
         ser.write(b'G0 Z-10\n')  # Move down by 10mm
@@ -29,6 +37,10 @@ def main():
 
         # Set back to absolute positioning (optional, for safety)
         ser.write(b'G90\n')
+
+	
+        ser.write(b'G0 Z10\n')
+        ser.write(b'G28\n')
 
         print("Commands sent successfully.")
 

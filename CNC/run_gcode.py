@@ -19,9 +19,10 @@ def main():
         with open("run.gcode", "r") as file:
             
             for line in file:
-                ser.write(b'{line}')
+                ser.write(line.encode('utf-8'))
+                time.sleep(0.1)
                 #print(ser.readline().decode('utf-8').strip())
-                print(line)
+                #print(line)
 
     except serial.SerialException as e:
         print(f"Error: {e}")
