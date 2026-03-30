@@ -20,7 +20,7 @@ def main():
             
             for line in file:
                 ser.write(line.encode('utf-8'))
-                time.sleep(0.1)
+                time.sleep(0.5)
                 #print(ser.readline().decode('utf-8').strip())
                 #print(line)
 
